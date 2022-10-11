@@ -5,7 +5,6 @@ module.exports = function (app) {
     const pgp = require('pg-promise')(/*options*/);
     const db = pgp({
         host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
         database: process.env.DB_NAME,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
@@ -13,7 +12,7 @@ module.exports = function (app) {
     });
 
     app.post('/login', function (req, res) {
-        const username = req.body.username;
+        const username = req.body.username || '';
 
         db.one('SELECT * FROM users WHERE username = $1', username)
             .then(function (user) {
@@ -29,10 +28,7 @@ module.exports = function (app) {
                         });
                     } else {
                         res.status(401).json({
-                            message: 'Authentication failed'
-                        });
-                        res.status(200).send({
-                            message: 'Authentication successful!',
+                            message: 'Unauthorized',
                         });
                     }
                 });
@@ -43,5 +39,21 @@ module.exports = function (app) {
                     message: 'Unauthorized',
                 });
             });
+    });
+
+    app.post('/auth', function (req, res) {
+        const token = req.body.token || '';
+        const jwt = require('jsonwebtoken');
+        jwt.verify(token, process.env.JWT_SECRET, function (err, decoded) {
+            if (err) {
+                res.status(401).json({
+                    message: 'Unauthorized',
+                });
+            } else {
+                res.status(200).json({
+                    message: 'Authorized',
+                });
+            }
+        });
     });
 }
