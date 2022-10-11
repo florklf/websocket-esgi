@@ -35,14 +35,14 @@ module.exports = function (app) {
             })
             .catch(function (error) {
                 console.log(error)
-                res.send({
+                res.status(401).json({
                     message: 'Unauthorized',
                 });
             });
     });
 
-    app.post('/auth', function (req, res) {
-        const token = req.body.token || '';
+    app.get('/auth', function (req, res) {
+        const token = req.cookies?.token || '';
         const jwt = require('jsonwebtoken');
         jwt.verify(token, process.env.JWT_SECRET, function (err, decoded) {
             if (err) {
