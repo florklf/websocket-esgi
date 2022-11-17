@@ -3,15 +3,24 @@
     class="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
   >
     <div class="w-full max-w-md space-y-8">
+      <div v-if="state.error" class="rounded-md bg-red-50 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <XCircleIcon class="h-5 w-5 text-red-400" aria-hidden="true" />
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">
+              Error
+            </h3>
+            <div class="mt-2 text-sm text-red-700">
+              <p>{{ state.error }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
       <div>
-        <img
-          class="mx-auto h-12 w-auto"
-          src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-          alt="Your Company"
-        />
-        <h2
-          class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900"
-        >
+        <img class="mx-auto h-12 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600" alt="Your Company" />
+        <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
           Sign in to your account
         </h2>
       </div>
@@ -21,8 +30,8 @@
           <div>
             <label for="username" class="sr-only">Username</label>
             <input
-              v-model="state.username"
               id="username"
+              v-model="state.username"
               name="username"
               type="text"
               autocomplete="Username"
@@ -34,8 +43,8 @@
           <div>
             <label for="password" class="sr-only">Password</label>
             <input
-              v-model="state.password"
               id="password"
+              v-model="state.password"
               name="password"
               type="password"
               autocomplete="current-password"
@@ -54,17 +63,18 @@
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
             />
-            <label for="remember-me" class="ml-2 block text-sm text-gray-900"
-              >Remember me</label
-            >
+            <label
+              for="remember-me"
+              class="ml-2 block text-sm text-gray-900"
+            >Remember me</label>
           </div>
         </div>
 
         <div>
           <button
-            @click.prevent="login(email,password)"
             type="submit"
             class="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            @click.prevent="login(email, password)"
           >
             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
               <LockClosedIcon
@@ -72,6 +82,7 @@
                 aria-hidden="true"
               />
             </span>
+            <div>sq</div>
             Sign in
           </button>
         </div>
@@ -81,30 +92,31 @@
 </template>
 
 <script setup>
-import { LockClosedIcon } from "@heroicons/vue/20/solid";
-import { reactive } from 'vue'
-import router from "../router";
+import { LockClosedIcon, XCircleIcon } from '@heroicons/vue/20/solid';
+import { reactive } from 'vue';
+import router from '../router';
 
-const state = reactive({ username: null, password: null })
+const state = reactive({ username: null, password: null, error: null });
 
 const login = async () => {
-  var options = {
-    method: "POST",
+  const options = {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       username: state.username,
       password: state.password,
     }),
-    credentials: "include",
+    credentials: 'include',
   };
-  await fetch("http://localhost:3000/api/login", options).then(function (response) {
-    if (response.status == 200) {
-      router.push("/");
-    } else {
-      console.log("error");
-    }
-  });
+  try {
+    const res = await fetch('http://localhost:3000/api/login', options);
+    const json = await res.json();
+    if (res.status === 200) router.push('/');
+    else state.error = json.message;
+  } catch (err) {
+    state.error = 'erreur:'.err;
+  }
 };
 </script>
