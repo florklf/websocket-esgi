@@ -1,112 +1,254 @@
-<script setup></script>
+<script setup>
+import { io } from 'socket.io-client';
+import { ref } from 'vue';
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+  TransitionChild,
+  TransitionRoot,
+} from '@headlessui/vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { EllipsisVerticalIcon } from '@heroicons/vue/20/solid';
+
+const socket = io('http://localhost:3000/');
+
+socket.on('chat message', (msg) => {
+  console.log(msg);
+});
+
+const tabs = [
+  { name: 'All', href: '#', current: true },
+  { name: 'Online', href: '#', current: false },
+  { name: 'Offline', href: '#', current: false },
+];
+const team = [
+  {
+    name: 'Leslie Alexander',
+    handle: 'lesliealexander',
+    href: '#',
+    imageUrl:
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+    status: 'online',
+  },
+  // More people...
+];
+
+const open = ref(true);
+</script>
 
 <template>
-  <div class="min-w-full h-full border rounded lg:grid lg:grid-cols-3">
-    <div class="hidden lg:col-span-2 lg:block">
-      <div class="w-full flex flex-col h-full">
-        <div class="relative flex items-center p-3 border-b border-gray-300">
-          <img
-            class="object-cover w-10 h-10 rounded-full"
-            src="https://cdn.pixabay.com/photo/2018/01/15/07/51/woman-3083383__340.jpg"
-            alt="username"
-          />
-          <span class="block ml-2 font-bold text-gray-600">Emma</span>
-          <span class="absolute w-3 h-3 bg-green-600 rounded-full left-10 top-3" />
-        </div>
-        <div class="relative w-full p-6 overflow-y-auto flex-1">
-          <ul class="space-y-2">
-            <li class="flex justify-start">
-              <div class="relative max-w-xl px-4 py-2 text-gray-700 rounded shadow">
-                <span class="block">Hi</span>
-              </div>
-            </li>
-            <li class="flex justify-end">
-              <div class="relative max-w-xl px-4 py-2 text-gray-700 bg-gray-100 rounded shadow">
-                <span class="block">Hiiii</span>
-              </div>
-            </li>
-            <li class="flex justify-end">
-              <div class="relative max-w-xl px-4 py-2 text-gray-700 bg-gray-100 rounded shadow">
-                <span class="block">how are you?</span>
-              </div>
-            </li>
-            <li class="flex justify-start">
-              <div class="relative max-w-xl px-4 py-2 text-gray-700 rounded shadow">
-                <span class="block">Lorem ipsum dolor sit, amet consectetur adipisicing elit. </span>
-              </div>
-            </li>
-          </ul>
-        </div>
-
-        <div class="flex items-center justify-between w-full p-3 border-t border-gray-300">
-          <button>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-6 h-6 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </button>
-          <button>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-5 h-5 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-              />
-            </svg>
-          </button>
-
+  <!-- component -->
+  <!-- This is an example component -->
+  <div class="shadow-lg rounded-lg h-screen">
+    <!-- headaer -->
+    <div class="px-5 py-5 flex justify-between items-center bg-white border-b-2">
+      <div class="font-semibold text-2xl">
+        GoingChat
+      </div>
+      <div class="w-1/2">
+        <input
+          id=""
+          type="text"
+          name=""
+          placeholder="search IRL"
+          class="rounded-2xl bg-gray-100 py-3 px-5 w-full"
+        />
+      </div>
+      <div
+        class="h-12 w-12 p-2 bg-yellow-500 rounded-full text-white font-semibold flex items-center justify-center"
+      >
+        RA
+      </div>
+    </div>
+    <!-- end header -->
+    <!-- Chatting -->
+    <div class="flex flex-row justify-between bg-white">
+      <!-- chat list -->
+      <div class="flex flex-col w-2/5 border-r-2 overflow-y-auto">
+        <!-- search compt -->
+        <div class="border-b-2 py-4 px-2">
           <input
             type="text"
-            placeholder="Message"
-            class="block w-full py-2 pl-4 mx-3 bg-gray-100 rounded-full outline-none focus:text-gray-700"
-            name="message"
-            required
+            placeholder="search chatting"
+            class="py-2 px-2 border-2 border-gray-200 rounded-2xl w-full"
           />
-          <button>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-5 h-5 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        </div>
+        <!-- end search compt -->
+        <!-- user list -->
+        <div
+          class="flex flex-row py-4 px-2 justify-center items-center border-b-2"
+        >
+          <div class="w-1/4">
+            <img
+              src="https://source.unsplash.com/_7LbC5J-jw4/600x600"
+              class="object-cover h-12 w-12 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="w-full">
+            <div class="text-lg font-semibold">
+              Luis1994
+            </div>
+            <span class="text-gray-500">Pick me at 9:00 Am</span>
+          </div>
+        </div>
+        <div class="flex flex-row py-4 px-2 items-center border-b-2">
+          <div class="w-1/4">
+            <img
+              src="https://source.unsplash.com/otT2199XwI8/600x600"
+              class="object-cover h-12 w-12 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="w-full">
+            <div class="text-lg font-semibold">
+              Everest Trip 2021
+            </div>
+            <span class="text-gray-500">Hi Sam, Welcome</span>
+          </div>
+        </div>
+        <div
+          class="flex flex-row py-4 px-2 items-center border-b-2 border-l-4 border-blue-400"
+        >
+          <div class="w-1/4">
+            <img
+              src="https://source.unsplash.com/L2cxSuKWbpo/600x600"
+              class="object-cover h-12 w-12 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="w-full">
+            <div class="text-lg font-semibold">
+              MERN Stack
+            </div>
+            <span class="text-gray-500">Lusi : Thanks Everyone</span>
+          </div>
+        </div>
+        <div class="flex flex-row py-4 px-2 items-center border-b-2">
+          <div class="w-1/4">
+            <img
+              src="https://source.unsplash.com/vpOeXr5wmR4/600x600"
+              class="object-cover h-12 w-12 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="w-full">
+            <div class="text-lg font-semibold">
+              Javascript Indonesia
+            </div>
+            <span class="text-gray-500">Evan : some one can fix this</span>
+          </div>
+        </div>
+        <div class="flex flex-row py-4 px-2 items-center border-b-2">
+          <div class="w-1/4">
+            <img
+              src="https://source.unsplash.com/vpOeXr5wmR4/600x600"
+              class="object-cover h-12 w-12 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="w-full">
+            <div class="text-lg font-semibold">
+              Javascript Indonesia
+            </div>
+            <span class="text-gray-500">Evan : some one can fix this</span>
+          </div>
+        </div>
+
+        <div class="flex flex-row py-4 px-2 items-center border-b-2">
+          <div class="w-1/4">
+            <img
+              src="https://source.unsplash.com/vpOeXr5wmR4/600x600"
+              class="object-cover h-12 w-12 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="w-full">
+            <div class="text-lg font-semibold">
+              Javascript Indonesia
+            </div>
+            <span class="text-gray-500">Evan : some one can fix this</span>
+          </div>
+        </div>
+        <!-- end user list -->
+      </div>
+      <!-- end chat list -->
+      <!-- message -->
+      <div class="w-full px-5 flex flex-col justify-between">
+        <div class="flex flex-col mt-5">
+          <div class="flex justify-end mb-4">
+            <div
+              class="mr-2 py-3 px-4 bg-blue-400 rounded-bl-3xl rounded-tl-3xl rounded-tr-xl text-white"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-              />
-            </svg>
-          </button>
-          <button type="submit">
-            <svg
-              class="w-5 h-5 text-gray-500 origin-center transform rotate-90"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+              Welcome to group everyone !
+            </div>
+            <img
+              src="https://source.unsplash.com/vpOeXr5wmR4/600x600"
+              class="object-cover h-8 w-8 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="flex justify-start mb-4">
+            <img
+              src="https://source.unsplash.com/vpOeXr5wmR4/600x600"
+              class="object-cover h-8 w-8 rounded-full"
+              alt=""
+            />
+            <div
+              class="ml-2 py-3 px-4 bg-gray-400 rounded-br-3xl rounded-tr-3xl rounded-tl-xl text-white"
             >
-              <path
-                d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"
-              />
-            </svg>
-          </button>
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat
+              at praesentium, aut ullam delectus odio error sit rem. Architecto
+              nulla doloribus laborum illo rem enim dolor odio saepe,
+              consequatur quas?
+            </div>
+          </div>
+          <div class="flex justify-end mb-4">
+            <div>
+              <div
+                class="mr-2 py-3 px-4 bg-blue-400 rounded-bl-3xl rounded-tl-3xl rounded-tr-xl text-white"
+              >
+                Lorem ipsum dolor, sit amet consectetur adipisicing elit.
+                Magnam, repudiandae.
+              </div>
+
+              <div
+                class="mt-4 mr-2 py-3 px-4 bg-blue-400 rounded-bl-3xl rounded-tl-3xl rounded-tr-xl text-white"
+              >
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Debitis, reiciendis!
+              </div>
+            </div>
+            <img
+              src="https://source.unsplash.com/vpOeXr5wmR4/600x600"
+              class="object-cover h-8 w-8 rounded-full"
+              alt=""
+            />
+          </div>
+          <div class="flex justify-start mb-4">
+            <img
+              src="https://source.unsplash.com/vpOeXr5wmR4/600x600"
+              class="object-cover h-8 w-8 rounded-full"
+              alt=""
+            />
+            <div
+              class="ml-2 py-3 px-4 bg-gray-400 rounded-br-3xl rounded-tr-3xl rounded-tl-xl text-white"
+            >
+              happy holiday guys!
+            </div>
+          </div>
+        </div>
+        <div class="py-5">
+          <input
+            class="w-full bg-gray-300 py-5 px-3 rounded-xl"
+            type="text"
+            placeholder="type your message here..."
+          />
         </div>
       </div>
     </div>

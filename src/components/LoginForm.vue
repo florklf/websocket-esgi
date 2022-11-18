@@ -69,7 +69,6 @@
             >Remember me</label>
           </div>
         </div>
-
         <div>
           <button
             type="submit"
@@ -82,8 +81,8 @@
                 aria-hidden="true"
               />
             </span>
-            <div>sq</div>
-            Sign in
+            <atom-spinner v-if="state.loading" :animation-duration="1000" :size="40" color="white" />
+            <span v-if="!state.loading">Sign in</span>
           </button>
         </div>
       </form>
@@ -93,12 +92,17 @@
 
 <script setup>
 import { LockClosedIcon, XCircleIcon } from '@heroicons/vue/20/solid';
+import { AtomSpinner } from 'epic-spinners';
+
 import { reactive } from 'vue';
 import router from '../router';
 
-const state = reactive({ username: null, password: null, error: null });
+const state = reactive({
+  username: null, password: null, error: null, loading: false,
+});
 
 const login = async () => {
+  state.loading = true;
   const options = {
     method: 'POST',
     headers: {
@@ -113,10 +117,12 @@ const login = async () => {
   try {
     const res = await fetch('http://localhost:3000/api/login', options);
     const json = await res.json();
+    console.log(res);
     if (res.status === 200) router.push('/');
     else state.error = json.message;
   } catch (err) {
-    state.error = 'erreur:'.err;
+    state.error = err;
   }
+  state.loading = false;
 };
 </script>
