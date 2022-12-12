@@ -4,6 +4,7 @@ const conversationController = require('../controllers/conversation.controller')
 
 
 router.get('/', conversationController.getAll);
-router.get('/:id', conversationController.getUserConversations);
+router.get('/:id', conversationController.getConversation);
+router.get('/user/:id', conversationController.getUserConversations);
 
 module.exports = router;

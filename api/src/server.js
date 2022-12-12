@@ -34,29 +34,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// io.use((socket, next) => {
-//   const id = socket.handshake.auth.id;
-//   if (id) {
-//     // find existing session
-//     const session = sessionStore.findSession(id);
-//     if (session) {
-//       socket.sessionID = sessionID;
-//       socket.userID = session.userID;
-//       socket.username = session.username;
-//       return next();
-//     }
-//   }
-//   const username = socket.handshake.auth.username;
-//   if (!username) {
-//     return next(new Error("invalid username"));
-//   }
-//   // create new session
-//   socket.sessionID = randomId();
-//   socket.userID = randomId();
-//   socket.username = username;
-//   next();
-// });
-
 io.use((socket, next) => {
   const username = socket.handshake.auth.username;
   const id = socket.handshake.auth.id;
@@ -85,7 +62,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('join conversation', (conversation) => {
-    socket.join(conversation);
+    socket.join(`room_${conversation}`);
   });
 
   socket.on('leave conversation', (conversation) => {
@@ -100,7 +77,7 @@ io.on('connection', (socket) => {
         content,
       },
     }).then((message) => {
-      io.in(conversation_id).emit("private message", message);
+      io.in(`room_${conversation_id}`).emit("private message", {content: message.content, from: socket.id});
     });
   });
 });

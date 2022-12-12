@@ -13,12 +13,14 @@ exports.getAll = async (req, res, next) => {
     }
 }
 
-exports.getConversations = async (req, res, next) => {
+exports.getConversation = async (req, res, next) => {
     try {
         const { id } = req.params;
-        // console.log(id);
-        const user = await prisma.user.findUnique({ where: { id: id } });
-        res.status(200).json({ user });
+        const conversation = await prisma.conversation.findUnique({
+            where: { id: parseInt(id) },
+            include: { users: true, messages: true }
+        });
+        res.status(200).json(conversation);
     } catch (e) {
         res.status(401).json({ message: e.message});
     }

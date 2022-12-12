@@ -1,52 +1,60 @@
 <script setup>
 import {
-  ref, inject, onMounted, computed, onBeforeUnmount,
+  ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, onServerPrefetch,
 } from 'vue';
-import ConversationMessage from './ConversationMessage.vue';
-
-const socket = inject('socket');
-const currentUser = inject('currentUser');
 
 const props = defineProps({
-  selectedConv: Object,
+  conversationId: Number,
 });
 const input = ref();
 
-const messages = computed(() => {
-  if (props.selectedConv) {
-    return props.selectedConv.messages.sort((a, b) => {
-      if (a.created_at < b.created_at) return -1;
-      return a.created_at > b.created_at ? 1 : 0;
-    });
-  }
-  return [];
-});
-
+const socket = inject('socket');
+const currentUser = inject('currentUser');
+const conversation = ref();
 
 function sendMessage(e) {
-  if ((e.key === 'Enter' || e.keyCode === 13) && props.selectedConv) {
+  if ((e.key === 'Enter' || e.keyCode === 13)) {
     const content = input.value;
     socket.emit('private message', {
       content,
-      conversation_id: props.selectedConv.id,
+      conversation_id: props.conversationId,
     });
     input.value = '';
   }
 }
 
-socket.on('private message', (message) => {
-  messages.value.push(message);
-});
-
 onMounted(() => {
-  socket.emit('join conversation', props.selectedConv.id);
+  socket.emit('join conversation', props.conversationId);
 });
 
 onBeforeUnmount(() => {
-  socket.emit('leave conversation', props.selectedConv.id);
+  socket.emit('leave conversation', props.conversationId);
 });
 
-const participants = computed(() => props.selectedConv.users.filter((participant) => participant.id !== currentUser.value.id));
+socket.on('private message', ({ content, from }) => {
+  console.log('received private message', { content, from });
+  conversation.value.messages.push({
+    content,
+    user_id: from,
+  });
+});
+
+const getConversation = async () => {
+  const res = await fetch(`http://localhost:3000/api/conversations/${props.conversationId}`, { credentials: 'include' });
+  return res.json();
+};
+
+onBeforeMount(async () => {
+  console.log(props.conversationId);
+  conversation.value = await getConversation();
+});
+
+const participants = computed(() => {
+  if (conversation.value) {
+    return conversation.value.users.filter((participant) => participant.id !== currentUser.value.id);
+  }
+  return [];
+});
 
 </script>
 
@@ -57,9 +65,7 @@ const participants = computed(() => props.selectedConv.users.filter((participant
       <div class="flex items-start space-x-5">
         <div class="flex-shrink-0">
           <div class="relative">
-            <img class="h-16 w-16 rounded-full"
-              src="https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=1024&h=1024&q=80"
-              alt="" />
+            <img class="h-16 w-16 rounded-full" src="https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=1024&h=1024&q=80" alt="" />
             <span class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true" />
           </div>
         </div>
@@ -88,20 +94,21 @@ const participants = computed(() => props.selectedConv.users.filter((participant
       </div> -->
     </div>
 
-    <div class="flex flex-col h-screen">
-      <!-- <ConversationMessage v-for="message in messages" :key="message.id" :message="message" /> -->
-      <div v-for="m in messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
-        <div
-          :class="{ 'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id }"
-          class="w-fit rounded-3xl p-3">
+    <div v-if="conversation" class="flex flex-col h-screen">
+      <div v-for="m in conversation.messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
+        <div :class="{ 'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id }" class="w-fit rounded-3xl p-3">
           {{ m.content }}
         </div>
       </div>
       <!-- Input -->
       <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full py-4 mt-auto">
-        <input v-model="input" type="text"
+        <input
+          v-model="input"
+          type="text"
           class="bg-gray-200 block w-full rounded-md py-4 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder="Write a message..." @keypress="sendMessage" />
+          placeholder="Write a message..."
+          @keypress="sendMessage"
+        />
       </div>
     </div>
   </div>

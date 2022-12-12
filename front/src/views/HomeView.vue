@@ -52,7 +52,7 @@ const logout = async () => {
   }
 };
 const getConversations = async () => {
-  const res = await fetch(`http://localhost:3000/api/conversations/${currentUser.value.id}`, { credentials: 'include' });
+  const res = await fetch(`http://localhost:3000/api/conversations/user/${currentUser.value.id}`, { credentials: 'include' });
   return res.json();
 };
 
@@ -109,6 +109,6 @@ onBeforeMount(async () => {
         </li>
       </ul>
     </div>
-    <Conversation v-else-if="selectedConv" :selected-conv="selectedConv" />
+    <Conversation v-else-if="selectedConv" :conversation-id="selectedConv.id" />
   </div>
 </template>
