@@ -117,7 +117,6 @@ const login = async () => {
   try {
     const res = await fetch('http://localhost:3000/api/login', options);
     const json = await res.json();
-    console.log(res);
     if (res.status === 200) router.push('/');
     else state.error = json.message;
   } catch (err) {

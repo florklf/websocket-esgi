@@ -1,12 +1,14 @@
 <script setup>
-import { ref, inject, onMounted } from 'vue';
+import {
+  ref, inject, onMounted, computed,
+} from 'vue';
 import ConversationMessage from './ConversationMessage.vue';
 
 const socket = inject('socket');
-console.log(socket);
+const currentUser = inject('currentUser');
 
 const props = defineProps({
-  selectedUser: Object,
+  selectedConv: Object,
 });
 const message = ref();
 
@@ -51,7 +53,10 @@ socket.on('private message', ({ content, from }) => {
 });
 
 onMounted(() => {
+  console.log(props.selectedConv);
 });
+const participants = computed(() => props.selectedConv.users.filter((participant) => participant.id !== currentUser.value.id));
+
 </script>
 
 <template>
@@ -67,7 +72,14 @@ onMounted(() => {
         </div>
         <div class="pt-1.5">
           <h1 class="text-2xl font-bold text-gray-900">
-            {{ selectedUser.username }}
+            <!-- {{ selectedUser.username }} -->
+            <!-- {{ props.selectedConv.users[0].username }} -->
+            <template v-for="(user, index) in participants" :key="user.id">
+              <template v-if="index > 0">
+                ,
+              </template>
+              <span>{{ user.username }}</span>
+            </template>
           </h1>
           <p class="text-sm font-medium text-gray-500">
             Applied for <a href="#" class="text-gray-900">Front End Developer</a> on <time datetime="2020-08-25">August 25, 2020</time>
@@ -88,11 +100,11 @@ onMounted(() => {
       <!-- <ConversationsListItem v-for="user in users" :key="user.id" :username="user.username" @click="$emit('select-conversation', user)" /> -->
       <!-- Discussion -->
       <!-- <ConversationMessage v-for="message in messages" :key="message.id" :message="message" /> -->
-      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full flex-1">
-        <div class="w-fit ml-auto rounded-3xl bg-green-400 p-3">
-          premier message
+      <div v-for="m in selectedConv.messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
+        <div :class="{'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id}" class="w-fit rounded-3xl p-3">
+          {{ m.content }}
         </div>
-        <div class="w-fit mr-auto rounded-3xl bg-gray-200 p-3">
+        <!-- <div class="w-fit mr-auto rounded-3xl bg-gray-200 p-3">
           2e message
         </div>
         <div class="w-fit mr-auto rounded-3xl bg-gray-200 p-3">
@@ -100,11 +112,11 @@ onMounted(() => {
         </div>
         <div class="w-fit ml-auto rounded-3xl bg-green-400 p-3">
           un 4e super message
-        </div>
+        </div> -->
       </div>
 
       <!-- Input -->
-      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full mb-2">
+      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full mb-2 mt-auto">
         <input v-model="message" type="text" class="bg-gray-200 block w-full rounded-md py-4 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Write a message..." @keypress="sendMessage" />
       </div>
     </div>

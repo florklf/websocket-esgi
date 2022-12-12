@@ -5,7 +5,7 @@ import ConversationsListItem from './ConversationsListItem.vue';
 // const users = ref();
 defineEmits(['start-conversation', 'select-conversation']);
 const props = defineProps({
-  users: {
+  conversations: {
     type: Array,
     required: true,
     default: () => [],
@@ -31,7 +31,7 @@ onMounted(async () => {
     <button @click="$emit('start-conversation')">
       Démarrer une conversation
     </button>
-    <ConversationsListItem v-for="user in users" :key="user.id" :username="user.username" @click="$emit('select-conversation', user)" />
+    <ConversationsListItem v-for="conversation in conversations" :key="conversation.id" :conversation="conversation" @click="$emit('select-conversation', conversation)" />
   <!-- </TransitionGroup> -->
   </ul>
 </template>

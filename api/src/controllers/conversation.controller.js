@@ -28,9 +28,9 @@ exports.getUserConversations = async (req, res, next) => {
     const { id } = parseInt(req.params);
     try {
         const conversations = await prisma.conversation.findMany({
-            where: { users: { some: { id: id } } }},
-            { include: { users: true, messages: true } }
-            );
+            where: { users: { some: { id: id } } },
+            include: { users: true, messages: true }
+        });
         res.status(200).json(conversations);
     } catch (e) {
         res.status(401).json({ message: e.message});

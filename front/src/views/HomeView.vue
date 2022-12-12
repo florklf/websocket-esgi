@@ -12,9 +12,11 @@ const connectedUsers = ref();
 const allUsers = ref();
 const conversations = ref();
 const router = useRouter();
+const selectedConv = ref();
 
 const socket = io('http://localhost:3000/', { autoConnect: false });
 provide('socket', socket);
+provide('currentUser', currentUser);
 
 socket.on('chat message', (msg) => {
   console.log(msg);
@@ -30,10 +32,10 @@ socket.on('user connected', (arrivingUser) => {
 });
 
 const selectedConversation = (data) => {
-  selectedUser.value = data;
+  selectedConv.value = data;
 };
 const startConversation = () => {
-  selectedUser.value = null;
+  selectedConv.value = null;
 };
 
 const fetchCurrentUser = async () => {
@@ -69,7 +71,6 @@ onBeforeMount(async () => {
     });
     socket.auth = currentUser.value;
     socket.connect();
-    console.log(socket);
   } catch (err) {
     console.log(err);
   }
@@ -78,8 +79,8 @@ onBeforeMount(async () => {
 
 <template>
   <div class="flex h-screen py-6 divide-x">
-    <ConversationsList :users="connectedUsers" @select-conversation="selectedConversation" @start-conversation="startConversation" />
-    <div v-if="!selectedUser && currentUser" class="flex-1 flex flex-col pl-12 pr-6">
+    <ConversationsList :conversations="conversations" @select-conversation="selectedConversation" @start-conversation="startConversation" />
+    <div v-if="!selectedConv && currentUser" class="flex-1 flex flex-col pl-12 pr-6">
       <div class="flex justify-between">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">
@@ -108,6 +109,6 @@ onBeforeMount(async () => {
         </li>
       </ul>
     </div>
-    <Conversation v-else-if="selectedUser" :selected-user="selectedUser" />
+    <Conversation v-else-if="selectedConv" :selected-conv="selectedConv" />
   </div>
 </template>

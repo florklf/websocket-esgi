@@ -1,7 +1,16 @@
 <script setup>
-defineProps({
-  username: String,
+import { computed, inject } from 'vue';
+
+const props = defineProps({
+  conversation: {
+    type: Object,
+    required: true,
+    default: () => {},
+  },
 });
+const currentUser = inject('currentUser');
+const participants = computed(() => props.conversation.users.filter((participant) => participant.id !== currentUser.value.id));
+
 </script>
 
 <template>
@@ -14,7 +23,12 @@ defineProps({
       </span>
       <div class="ml-4 truncate">
         <p class="truncate text-sm font-medium text-gray-900">
-          {{ username }}
+          <template v-for="(user, index) in participants" :key="user.id">
+            <template v-if="index > 0">
+              ,
+            </template>
+            <span>{{ user.username }}</span>
+          </template>
         </p>
       </div>
     </div>
