@@ -1,6 +1,6 @@
 <script setup>
 import {
-  ref, inject, onMounted, computed,
+  ref, inject, onMounted, computed, onBeforeUnmount,
 } from 'vue';
 import ConversationMessage from './ConversationMessage.vue';
 
@@ -10,50 +10,42 @@ const currentUser = inject('currentUser');
 const props = defineProps({
   selectedConv: Object,
 });
-const message = ref();
+const input = ref();
 
-// console.log(user);
-// function sendMessage(e) {
-//   if (e.key === 'Enter' || e.keyCode === 13) {
-//     console.log(e.target.value);
-//     socket.emit('chat message', e.target.value);
-//   }
-// }
+const messages = computed(() => {
+  if (props.selectedConv) {
+    return props.selectedConv.messages.sort((a, b) => {
+      if (a.created_at < b.created_at) return -1;
+      return a.created_at > b.created_at ? 1 : 0;
+    });
+  }
+  return [];
+});
+
+
 function sendMessage(e) {
-  if (e.key === 'Enter' || e.keyCode === 13) {
-    const content = message.value;
-    if (props.selectedConv) {
-      socket.emit('private message', {
-        content,
-        to: props.selectedConv.id,
-      });
-      // props.selectedUser.messages.push({
-      //   content,
-      //   fromSelf: true,
-      // });
-    }
+  if ((e.key === 'Enter' || e.keyCode === 13) && props.selectedConv) {
+    const content = input.value;
+    socket.emit('private message', {
+      content,
+      conversation_id: props.selectedConv.id,
+    });
+    input.value = '';
   }
 }
-socket.on('private message', ({ content, from }) => {
-  console.log('received private message', { content, from });
-  // for (let i = 0; i < this.users.length; i++) {
-  //   const user = this.users[i];
-  //   if (user.userID === from) {
-  //     user.messages.push({
-  //       content,
-  //       fromSelf: false,
-  //     });
-  //     if (user !== this.selectedUser) {
-  //       user.hasNewMessages = true;
-  //     }
-  //     break;
-  //   }
-  // }
+
+socket.on('private message', (message) => {
+  messages.value.push(message);
 });
 
 onMounted(() => {
-  console.log(props.selectedConv);
+  socket.emit('join conversation', props.selectedConv.id);
 });
+
+onBeforeUnmount(() => {
+  socket.emit('leave conversation', props.selectedConv.id);
+});
+
 const participants = computed(() => props.selectedConv.users.filter((participant) => participant.id !== currentUser.value.id));
 
 </script>
@@ -65,14 +57,14 @@ const participants = computed(() => props.selectedConv.users.filter((participant
       <div class="flex items-start space-x-5">
         <div class="flex-shrink-0">
           <div class="relative">
-            <img class="h-16 w-16 rounded-full" src="https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=1024&h=1024&q=80" alt="" />
+            <img class="h-16 w-16 rounded-full"
+              src="https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=1024&h=1024&q=80"
+              alt="" />
             <span class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true" />
           </div>
         </div>
         <div class="pt-1.5">
           <h1 class="text-2xl font-bold text-gray-900">
-            <!-- {{ selectedUser.username }} -->
-            <!-- {{ props.selectedConv.users[0].username }} -->
             <template v-for="(user, index) in participants" :key="user.id">
               <template v-if="index > 0">
                 ,
@@ -81,7 +73,8 @@ const participants = computed(() => props.selectedConv.users.filter((participant
             </template>
           </h1>
           <p class="text-sm font-medium text-gray-500">
-            Applied for <a href="#" class="text-gray-900">Front End Developer</a> on <time datetime="2020-08-25">August 25, 2020</time>
+            Applied for <a href="#" class="text-gray-900">Front End Developer</a> on <time datetime="2020-08-25">August
+              25, 2020</time>
           </p>
         </div>
       </div>
@@ -96,27 +89,19 @@ const participants = computed(() => props.selectedConv.users.filter((participant
     </div>
 
     <div class="flex flex-col h-screen">
-      <!-- <ConversationsListItem v-for="user in users" :key="user.id" :username="user.username" @click="$emit('select-conversation', user)" /> -->
-      <!-- Discussion -->
       <!-- <ConversationMessage v-for="message in messages" :key="message.id" :message="message" /> -->
-      <div v-for="m in selectedConv.messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
-        <div :class="{'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id}" class="w-fit rounded-3xl p-3">
+      <div v-for="m in messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
+        <div
+          :class="{ 'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id }"
+          class="w-fit rounded-3xl p-3">
           {{ m.content }}
         </div>
-        <!-- <div class="w-fit mr-auto rounded-3xl bg-gray-200 p-3">
-          2e message
-        </div>
-        <div class="w-fit mr-auto rounded-3xl bg-gray-200 p-3">
-          3e super message
-        </div>
-        <div class="w-fit ml-auto rounded-3xl bg-green-400 p-3">
-          un 4e super message
-        </div> -->
       </div>
-
       <!-- Input -->
-      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full mb-2 mt-auto">
-        <input v-model="message" type="text" class="bg-gray-200 block w-full rounded-md py-4 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Write a message..." @keypress="sendMessage" />
+      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full py-4 mt-auto">
+        <input v-model="input" type="text"
+          class="bg-gray-200 block w-full rounded-md py-4 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Write a message..." @keypress="sendMessage" />
       </div>
     </div>
   </div>

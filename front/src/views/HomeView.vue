@@ -18,9 +18,6 @@ const socket = io('http://localhost:3000/', { autoConnect: false });
 provide('socket', socket);
 provide('currentUser', currentUser);
 
-socket.on('chat message', (msg) => {
-  console.log(msg);
-});
 socket.on('users', (users) => {
   connectedUsers.value = users.filter((item) => item.userID !== currentUser.value.id).sort((a, b) => {
     if (a.username < b.username) return -1;
@@ -33,7 +30,6 @@ socket.on('user connected', (arrivingUser) => {
 
 const selectedConversation = (data) => {
   selectedConv.value = data;
-  socket.emit('join conversation', data.id);
 };
 const startConversation = () => {
   selectedConv.value = null;

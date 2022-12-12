@@ -66,8 +66,7 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-  console.log('a user connected');
-  console.log(io.engine.clientsCount);
+  console.log(`user ${socket.id} connected, there is ${io.engine.clientsCount} users connected`);
   const users = [];
   for (let [id, socket] of io.of("/").sockets) {
     users.push({
@@ -77,9 +76,6 @@ io.on('connection', (socket) => {
   }
   socket.emit("users", users);
 
-  // join the "userID" room
-  socket.join(socket.id);
-
   socket.broadcast.emit("user connected", {
     userID: socket.id,
     username: socket.username,
@@ -87,41 +83,26 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('user disconnected');
   });
-  socket.on('chat message', (msg) => {
-    console.log(msg);
-    io.emit('chat message', msg);
-  });
+
   socket.on('join conversation', (conversation) => {
     socket.join(conversation);
   });
-  socket.on("private message", ({ content, to }) => {
-    socket.to(to).emit("private message", {
-      from: socket.id,
-      to,
-      content,
-    });
-    // prisma.message.create({
-    //   data: {
-    //     content,
-    //     conversation_id: to,
-    //     user_id: socket.id,
-    //   }
-    // });
+
+  socket.on('leave conversation', (conversation) => {
+    socket.leave(conversation);
   });
 
-  // const [sockets] = io.sockets;
-  // console.log(sockets, 'lol');
-  // sockets.forEach((id, s) => {
-  //   users.push({
-  //     userID: id,
-  //     username: s.username,
-  //   });
-  // });
-  // for (const [id, socket] of io.of('/').sockets) {
-
-  // }
-  // socket.emit('users', users);
-  // // ...
+  socket.on("private message", ({ content, conversation_id }) => {
+    prisma.message.create({
+      data: {
+        user_id: socket.id,
+        conversation_id,
+        content,
+      },
+    }).then((message) => {
+      io.in(conversation_id).emit("private message", message);
+    });
+  });
 });
 
 app.use('/api', routes);
