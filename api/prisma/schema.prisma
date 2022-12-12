@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  username      String         @unique @db.VarChar(255)
+  password      String         @db.VarChar(255)
+  role          Role           @relation(fields: [role_id], references: [id])
+  role_id       Int            @default(1)
+  conversations Conversation[]
+  Message       Message[]
+  created_at    DateTime       @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?      @db.Timestamp(6)
+
+  @@map("users")
+}
+
+model Role {
+  id         Int       @id @default(autoincrement())
+  users      User[]
+  name       String    @unique @db.VarChar(255)
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+
+  @@map("roles")
+}
+
+model Conversation {
+  id         Int       @id @default(autoincrement())
+  users      User[]
+  messages   Message[]
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+
+  @@map("conversations")
+}
+
+model Message {
+  id              Int          @id @default(autoincrement())
+  conversation_id Int
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  user_id         Int
+  user            User         @relation(fields: [user_id], references: [id])
+  content         String       @db.VarChar(255)
+  created_at      DateTime     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?    @db.Timestamp(6)
+
+  @@map("messages")
+}
