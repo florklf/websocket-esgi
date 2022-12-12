@@ -21,22 +21,21 @@ const message = ref();
 // }
 function sendMessage(e) {
   if (e.key === 'Enter' || e.keyCode === 13) {
-    if (props.selectedUser) {
+    const content = message.value;
+    if (props.selectedConv) {
       socket.emit('private message', {
-        message,
-        to: props.selectedUser.userID,
+        content,
+        to: props.selectedConv.id,
       });
-      console.log({ message, to: props.selectedUser.userID });
-    //   props.selectedUser.messages.push({
-    //     content,
-    //     fromSelf: true,
-    //   });
+      // props.selectedUser.messages.push({
+      //   content,
+      //   fromSelf: true,
+      // });
     }
   }
 }
 socket.on('private message', ({ content, from }) => {
-  console.log(content);
-  console.log(from);
+  console.log('received private message', { content, from });
   // for (let i = 0; i < this.users.length; i++) {
   //   const user = this.users[i];
   //   if (user.userID === from) {

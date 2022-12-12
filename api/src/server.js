@@ -4,6 +4,9 @@ const cookies = require('cookie-parser');
 const { Server } = require('socket.io');
 const http = require('http');
 const routes = require('./routes');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 
 // const server = http.createServer(app);
 // const io = new Server(server);
@@ -88,12 +91,22 @@ io.on('connection', (socket) => {
     console.log(msg);
     io.emit('chat message', msg);
   });
+  socket.on('join conversation', (conversation) => {
+    socket.join(conversation);
+  });
   socket.on("private message", ({ content, to }) => {
-    socket.to(to).to(socket.id).emit("private message", {
-      content,
+    socket.to(to).emit("private message", {
       from: socket.id,
       to,
+      content,
     });
+    // prisma.message.create({
+    //   data: {
+    //     content,
+    //     conversation_id: to,
+    //     user_id: socket.id,
+    //   }
+    // });
   });
 
   // const [sockets] = io.sockets;
@@ -117,4 +130,4 @@ httpServer.listen(3000, () => {
   console.log('Server started on port 3000');
 });
 
-module.exports = {app, io};
+module.exports = { app, io };

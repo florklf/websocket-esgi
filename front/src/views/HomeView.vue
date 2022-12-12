@@ -33,6 +33,7 @@ socket.on('user connected', (arrivingUser) => {
 
 const selectedConversation = (data) => {
   selectedConv.value = data;
+  socket.emit('join conversation', data.id);
 };
 const startConversation = () => {
   selectedConv.value = null;
@@ -68,7 +69,6 @@ onBeforeMount(async () => {
     currentUser.value = await fetchCurrentUser();
     allUsers.value = await fetchUsers();
     conversations.value = await getConversations();
-    console.log(conversations.value);
     allUsers.value = allUsers.value.filter((item) => item.id !== currentUser.value.id).sort((a, b) => {
       if (a.username < b.username) return -1;
       return a.username > b.username ? 1 : 0;
@@ -99,8 +99,8 @@ onBeforeMount(async () => {
           Déconnexion
         </button>
       </div>
-      <ul role="list" class="divide-y divide-gray-200">
-        <li v-for="user in allUsers" :key="user.id" class="flex py-4 hover:bg-gray-200" @click="newConversation(user)">
+      <ul role="list" class="my-3 divide-y divide-gray-200">
+        <li v-for="user in allUsers" :key="user.id" class="flex p-4 hover:bg-gray-200" @click="newConversation(user)">
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-900">
