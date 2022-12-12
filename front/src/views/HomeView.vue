@@ -59,6 +59,10 @@ const getConversations = async () => {
   return res.json();
 };
 
+const newConversation = (user) => {
+  selectedConv.value = { users: [user, currentUser.value] };
+};
+
 onBeforeMount(async () => {
   try {
     currentUser.value = await fetchCurrentUser();
@@ -96,7 +100,7 @@ onBeforeMount(async () => {
         </button>
       </div>
       <ul role="list" class="divide-y divide-gray-200">
-        <li v-for="user in allUsers" :key="user.id" class="flex py-4 hover:bg-gray-200" @click="selectedUser = user">
+        <li v-for="user in allUsers" :key="user.id" class="flex py-4 hover:bg-gray-200" @click="newConversation(user)">
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-900">
