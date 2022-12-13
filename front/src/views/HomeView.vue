@@ -140,6 +140,7 @@ const askAdviser = () => {
     return;
   }
   socket.emit('ask adviser', currentUser.value.id);
+  toaster.show('Vous avez demandé à parler avec un conseiller', { type: 'info' });
 };
 
 const acceptRequest = async (request_id) => {
