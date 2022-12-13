@@ -8,8 +8,8 @@ const props = defineProps({
     type: Number,
     default: null,
   },
-  newConvUserId: {
-    type: Number,
+  newConvUser: {
+    type: Object,
     default: null,
   },
 });
@@ -91,7 +91,7 @@ onBeforeMount(async () => {
     conversation.value = await getConversation();
   } else {
     conversation.value = {
-      users: [currentUser.value.id, props.newConvUserId],
+      users: [currentUser.value.id, props.newConvUser.id],
       messages: [],
     };
   }
@@ -99,6 +99,9 @@ onBeforeMount(async () => {
 });
 
 const participants = computed(() => {
+  if (props.newConvUser) {
+    return [{ id: props.newConvUser.id, username: props.newConvUser.username }];
+  }
   if (conversation.value) {
     return conversation.value.users.filter((participant) => participant.id !== currentUser.value.id);
   }
