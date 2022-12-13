@@ -90,3 +90,24 @@ exports.getUserConversations = async (req, res, next) => {
         res.status(401).json({ message: e.message });
     }
 }
+
+exports.createConversation = async (req, res, next) => {
+    const { users } = req.body;
+    try {
+        const conversation = await prisma.conversation.create({
+            data: {
+                users: {
+                    connect: users.map((userId) => ({ id: userId })),
+                },
+            },
+            include: {
+                users: true,
+                messages: true,
+            },
+        });
+        res.status(200).json(conversation);
+    } catch (e) {
+        console.log(e);
+        res.status(401).json({ message: e.message });
+    }
+}

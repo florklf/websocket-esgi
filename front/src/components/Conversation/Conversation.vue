@@ -4,7 +4,14 @@ import {
 } from 'vue';
 
 const props = defineProps({
-  conversationId: Number,
+  conversationId: {
+    type: Number,
+    default: null,
+  },
+  newConvUserId: {
+    type: Number,
+    default: null,
+  },
 });
 const messages = ref(null);
 const input = ref();
@@ -13,13 +20,36 @@ const socket = inject('socket');
 const currentUser = inject('currentUser');
 const conversation = ref();
 
-function sendMessage(e) {
+const createConversation = async (users) => {
+  const res = await fetch('http://localhost:3000/api/conversations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      users,
+    }),
+  });
+  return res.json();
+};
+
+const getConversation = async () => {
+  const res = await fetch(`http://localhost:3000/api/conversations/${props.conversationId}`, { credentials: 'include' });
+  return res.json();
+};
+
+async function sendMessage(e) {
   if ((e.key === 'Enter' || e.keyCode === 13)) {
     const content = input.value;
     if (!content) return;
+    if (!conversation.value.id) {
+      conversation.value = await createConversation(conversation.value.users);
+      console.log('conversation created', conversation.value);
+      socket.emit('join conversation', conversation.value.id);
+    }
     socket.emit('private message', {
       content,
-      conversation_id: props.conversationId,
+      conversation_id: conversation.value.id,
     });
   }
 }
@@ -34,12 +64,14 @@ const scroll = (el, type, sec) => {
 };
 
 onMounted(() => {
-  socket.emit('join conversation', props.conversationId);
-  scroll(messages, 'auto', 50);
+  if (props.conversationId) {
+    socket.emit('join conversation', props.conversationId);
+    scroll(messages, 'auto', 50);
+  }
 });
 
 onBeforeUnmount(() => {
-  socket.emit('leave conversation', props.conversationId);
+  socket.emit('leave conversation', conversation.value.id);
 });
 
 socket.on('private message', ({ content, from }) => {
@@ -54,13 +86,16 @@ socket.on('private message', ({ content, from }) => {
   });
 });
 
-const getConversation = async () => {
-  const res = await fetch(`http://localhost:3000/api/conversations/${props.conversationId}`, { credentials: 'include' });
-  return res.json();
-};
-
 onBeforeMount(async () => {
-  conversation.value = await getConversation();
+  if (props.conversationId) {
+    conversation.value = await getConversation();
+  } else {
+    conversation.value = {
+      users: [currentUser.value.id, props.newConvUserId],
+      messages: [],
+    };
+  }
+  console.log(conversation);
 });
 
 const participants = computed(() => {
@@ -79,9 +114,11 @@ const participants = computed(() => {
       <div class="flex items-start space-x-5">
         <div class="flex-shrink-0">
           <div class="relative">
-            <img class="h-16 w-16 rounded-full"
+            <img
+              class="h-16 w-16 rounded-full"
               src="https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=1024&h=1024&q=80"
-              alt="" />
+              alt=""
+            />
             <span class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true" />
           </div>
         </div>
@@ -112,12 +149,13 @@ const participants = computed(() => {
 
     <!-- Messages -->
     <template v-if="conversation">
-      <div class="flex flex-col overflow-y-auto" ref="messages">
+      <div ref="messages" class="flex flex-col overflow-y-auto">
         <div class="flex flex-col flex-1">
           <div v-for="m in conversation.messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
             <div
               :class="{ 'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id }"
-              class="w-fit rounded-3xl p-3">
+              class="w-fit rounded-3xl p-3"
+            >
               {{ m.content }}
             </div>
           </div>
@@ -126,9 +164,13 @@ const participants = computed(() => {
     </template>
     <!-- Input -->
     <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full py-4 mt-auto">
-      <input v-model="input" type="text"
+      <input
+        v-model="input"
+        type="text"
         class="bg-gray-200 block w-full rounded-md py-4 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        placeholder="Écrivez votre message..." @keydown.enter="sendMessage" />
+        placeholder="Écrivez votre message..."
+        @keydown.enter="sendMessage"
+      />
     </div>
   </div>
 </template>

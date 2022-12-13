@@ -6,13 +6,14 @@ import { useRouter, useRoute } from 'vue-router';
 import Conversation from '../components/Conversation/Conversation.vue';
 import ConversationsList from '../components/ConversationsList/ConversationsList.vue';
 
-const selectedUser = ref();
+const router = useRouter();
+
 const currentUser = ref();
 const connectedUsers = ref();
 const allUsers = ref();
 const conversations = ref();
-const router = useRouter();
 const selectedConv = ref();
+const newConvUserId = ref();
 
 const socket = io('http://localhost:3000/', { autoConnect: false });
 provide('socket', socket);
@@ -57,7 +58,22 @@ const getConversations = async () => {
 };
 
 const newConversation = (user) => {
-  selectedConv.value = { users: [user, currentUser.value] };
+  const found = conversations.value.some((conv) => {
+    let result = false;
+    if (conv.users.length === 2) {
+      console.log('coucou');
+      if (conv.users.some((u) => u.id === user && conv.users.some((e) => e.id === currentUser.value.id))) {
+        console.log('coucou2');
+        selectedConv.value = conv;
+        result = true;
+      }
+    }
+    return result;
+  });
+  if (!found) {
+    newConvUserId.value = user;
+  }
+  console.log('new conversation', newConvUserId.value);
 };
 
 onBeforeMount(async () => {
@@ -78,9 +94,9 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen py-6 divide-x">
+  <div v-if="currentUser" class="flex h-screen py-6 divide-x">
     <ConversationsList :conversations="conversations" @select-conversation="selectedConversation" @start-conversation="startConversation" />
-    <div v-if="!selectedConv && currentUser" class="flex-1 flex flex-col pl-12 pr-6">
+    <div v-if="!selectedConv && !newConvUserId" class="flex-1 flex flex-col pl-12 pr-6">
       <div class="flex justify-between">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">
@@ -96,7 +112,7 @@ onBeforeMount(async () => {
         </button>
       </div>
       <ul role="list" class="my-3 divide-y divide-gray-200">
-        <li v-for="user in allUsers" :key="user.id" class="flex p-4 hover:bg-gray-200 cursor-pointer" @click="newConversation(user)">
+        <li v-for="user in allUsers" :key="user.id" class="flex p-4 hover:bg-gray-200 cursor-pointer" @click="newConversation(user.id)">
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-900">
@@ -110,5 +126,6 @@ onBeforeMount(async () => {
       </ul>
     </div>
     <Conversation v-else-if="selectedConv" :conversation-id="selectedConv.id" />
+    <Conversation v-else-if="newConvUserId" :new-conv-user-id="newConvUserId" />
   </div>
 </template>
