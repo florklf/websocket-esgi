@@ -168,7 +168,7 @@ io.on('connection', (socket) => {
         status: user.status === 'active' ? 'inactive' : 'active',
       },
     }).then((user) => {
-      io.emit('toggle user status', { status: user.status });
+      socket.emit('toggle user status', { status: user.status });
     });
   });
 
