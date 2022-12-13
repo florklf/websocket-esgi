@@ -74,6 +74,12 @@ socket.on('reject request', ({ from_username }) => {
     type: 'info',
   });
 });
+socket.on('toggle user status', ({ status }) => {
+  currentUser.value.status = status;
+});
+socket.on('no adviser', () => {
+  toaster.show('Il n\'y a pas de conseiller disponible pour le moment', { type: 'error' });
+});
 
 const selectedConversation = (data) => {
   selectedConv.value = data;
@@ -116,8 +122,11 @@ const getPendingRequests = async () => {
 };
 
 const askAdviser = () => {
+  if (currentUser.value.role === 'admin') {
+    toaster.show('Vous ne pouvez pas demander à parler avec un conseiller', { type: 'error' });
+    return;
+  }
   socket.emit('ask adviser', currentUser.value.id);
-
 };
 
 const acceptRequest = async (request_id) => {
@@ -128,6 +137,10 @@ const acceptRequest = async (request_id) => {
 const refuseRequest = (request_id) => {
   socket.emit('reject request', request_id);
   requests.value = requests.value.filter((req) => req.id !== request_id);
+};
+
+const toggleUserStatus = (user) => {
+  socket.emit('toggle user status', user);
 };
 
 const newConversation = (user) => {
@@ -185,6 +198,12 @@ onBeforeMount(async () => {
           </p>
         </div>
         <div class="flex items-center">
+          <button
+            class="relative focus:outline-none text-sm text-white font-semibold h-12 px-6 rounded-lg"
+            :class="currentUser.status === 'active' ? 'bg-green-700 hover:bg-green-900' : 'bg-gray-700 hover:bg-gray-900'"
+            @click="toggleUserStatus(currentUser)">
+            {{ currentUser.status === 'active' ? 'En ligne' : 'Hors ligne' }}
+          </button>
           <button
             class="m-3 bg-slate-900 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 text-white font-semibold h-12 px-6 rounded-lg w-full flex items-center justify-center sm:w-auto"
             @click="askAdviser">

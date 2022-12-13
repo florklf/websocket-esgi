@@ -108,14 +108,32 @@ io.on('connection', (socket) => {
   });
 
   socket.on('ask adviser', (user_id) => {
-    prisma.pendingRequest.create({
-      data: {
-        status: 'pending',
+    prisma.pendingRequest.findMany({
+      where: {
         user_id,
+        status: 'pending',
       },
-      include: { user: true },
-    }).then((pendingRequest) => {
-      io.to('adviser').emit('ask adviser', { pendingRequest });
+    }).then((pendingRequests) => {
+      if (pendingRequests.length > 0) {
+        return;
+      }
+      prisma.user.findMany({
+        where: { status: 'active', role: 'admin', },
+      }).then((users) => {
+        if (users.length === 0) {
+          io.to(user_id).emit('no adviser');
+          return;
+        }
+        prisma.pendingRequest.create({
+          data: {
+            status: 'pending',
+            user_id,
+          },
+          include: { user: true },
+        }).then((pendingRequest) => {
+          io.to('adviser').emit('ask adviser', { pendingRequest });
+        });
+      });
     });
   });
 
@@ -140,6 +158,17 @@ io.on('connection', (socket) => {
       include: { user: true },
     }).then((pendingRequest) => {
       io.to(pendingRequest.user.id).emit('accept request', { from_user: socket.handshake.auth });
+    });
+  });
+
+  socket.on('toggle user status', (user) => {
+    prisma.user.update({
+      where: { id: parseInt(user.id) },
+      data: {
+        status: user.status === 'active' ? 'inactive' : 'active',
+      },
+    }).then((user) => {
+      io.emit('toggle user status', { status: user.status });
     });
   });
 });

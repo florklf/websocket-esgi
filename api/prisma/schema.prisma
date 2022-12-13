@@ -11,6 +11,7 @@ model User {
   id             Int              @id @default(autoincrement())
   username       String           @unique @db.VarChar(255)
   password       String           @db.VarChar(255)
+  status         UserStatus       @default(active)
   role           Role             @default(user)
   role_id        Int              @default(1)
   conversations  Conversation[]
@@ -62,6 +63,11 @@ enum PendingRequestStatus {
   pending
   accepted
   rejected
+}
+
+enum UserStatus {
+  active
+  inactive
 }
 
 enum Role {

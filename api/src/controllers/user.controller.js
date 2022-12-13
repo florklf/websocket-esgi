@@ -33,6 +33,7 @@ exports.getCurrentUser = async (req, res, next) => {
                 id: true,
                 username: true,
                 role: true,
+                status: true,
                 created_at: true,
                 updated_at: true,
             }

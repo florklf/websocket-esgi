@@ -19,6 +19,7 @@ exports.getAll = async (req, res, next) => {
                         id: true,
                         username: true,
                         role_id: true,
+                        status: true,
                         created_at: true,
                         updated_at: true,
                     },
