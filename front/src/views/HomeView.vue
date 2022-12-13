@@ -5,6 +5,7 @@ import { onBeforeMount, ref, provide } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Conversation from '../components/Conversation/Conversation.vue';
 import ConversationsList from '../components/ConversationsList/ConversationsList.vue';
+import { createToaster } from "@meforma/vue-toaster";
 
 const router = useRouter();
 
@@ -15,6 +16,11 @@ const conversations = ref();
 const selectedConv = ref();
 const newConvUser = ref();
 const componentKey = ref(0);
+
+const toaster = createToaster({
+  position: 'bottom-right',
+  duration: 3000,
+});
 
 const socket = io('http://localhost:3000/', { autoConnect: false });
 provide('socket', socket);
@@ -28,6 +34,17 @@ socket.on('users', (users) => {
 });
 socket.on('user connected', (arrivingUser) => {
   connectedUsers.value.push(arrivingUser);
+});
+socket.on('user disconnected', (leavingUser) => {
+  connectedUsers.value = connectedUsers.value.filter((user) => user.userID !== leavingUser.userID);
+});
+socket.on('notification', ({ content, from_username, from_id }) => {
+  toaster.show(`${from_username} vous a envoyé un message: ${content.length > 10 ? content.slice(0, 10) + '...' : content }`, {
+    type: 'info',
+    onClick: () => {
+      newConversation(from_id);
+    },
+  });
 });
 
 const selectedConversation = (data) => {
@@ -109,7 +126,9 @@ onBeforeMount(async () => {
           </p>
         </div>
         <!-- logout button -->
-        <button class="relative bg-red-700 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 text-sm text-white font-semibold h-12 px-6 rounded-lg" @click="logout">
+        <button
+          class="relative bg-red-700 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 text-sm text-white font-semibold h-12 px-6 rounded-lg"
+          @click="logout">
           Déconnexion
         </button>
       </div>

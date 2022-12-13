@@ -70,7 +70,17 @@ io.on('connection', (socket) => {
         content,
       },
     }).then((message) => {
-      io.in(`room_${conversation_id}`).emit("private message", {content: message.content, from: socket.id});
+      io.in(`room_${conversation_id}`).emit("private message", { content: message.content, from: socket.id });
+      prisma.conversation.findUnique({
+        where: { id: parseInt(conversation_id) },
+        include: { users: true },
+      }).then((conversation) => {
+        conversation.users.forEach((user) => {
+          if (user.id !== socket.id) {
+            io.to(user.id).emit('notification', { content, from_username: user.username, from_id: user.id });
+          }
+        });
+      });
     });
   });
 });
