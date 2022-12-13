@@ -33,7 +33,6 @@ exports.isAuth = async (req, res) => {
 };
 
 exports.logout = async (req, res) => {
-    console.log('pipi') 
     console.log(res.clearCookie('token', { httpOnly: true }));
     res.status(200).json({ message: 'Logout successful' });
 };

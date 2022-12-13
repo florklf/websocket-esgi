@@ -1,11 +1,12 @@
 <script setup>
 import {
-  ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, onServerPrefetch,
+  ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, nextTick,
 } from 'vue';
 
 const props = defineProps({
   conversationId: Number,
 });
+const messages = ref(null);
 const input = ref();
 
 const socket = inject('socket');
@@ -15,16 +16,26 @@ const conversation = ref();
 function sendMessage(e) {
   if ((e.key === 'Enter' || e.keyCode === 13)) {
     const content = input.value;
+    if (!content) return;
     socket.emit('private message', {
       content,
       conversation_id: props.conversationId,
     });
-    input.value = '';
   }
 }
 
+const scroll = (el, type, sec) => {
+  setTimeout(() => {
+    el.value.scrollTo({
+      top: el.value.scrollHeight,
+      behavior: type,
+    });
+  }, sec);
+};
+
 onMounted(() => {
   socket.emit('join conversation', props.conversationId);
+  scroll(messages, 'auto', 50);
 });
 
 onBeforeUnmount(() => {
@@ -37,6 +48,10 @@ socket.on('private message', ({ content, from }) => {
     content,
     user_id: from,
   });
+  input.value = '';
+  nextTick(() => {
+    scroll(messages, 'smooth');
+  });
 });
 
 const getConversation = async () => {
@@ -45,7 +60,6 @@ const getConversation = async () => {
 };
 
 onBeforeMount(async () => {
-  console.log(props.conversationId);
   conversation.value = await getConversation();
 });
 
@@ -59,13 +73,15 @@ const participants = computed(() => {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col pl-12 pr-6">
+  <div class="flex-1 flex flex-col px-6">
     <!-- Header -->
     <div class="md:flex md:items-center md:justify-between md:space-x-5 border-b-2 pb-2 mb-2">
       <div class="flex items-start space-x-5">
         <div class="flex-shrink-0">
           <div class="relative">
-            <img class="h-16 w-16 rounded-full" src="https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=1024&h=1024&q=80" alt="" />
+            <img class="h-16 w-16 rounded-full"
+              src="https://images.unsplash.com/photo-1463453091185-61582044d556?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=1024&h=1024&q=80"
+              alt="" />
             <span class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true" />
           </div>
         </div>
@@ -94,22 +110,25 @@ const participants = computed(() => {
       </div> -->
     </div>
 
-    <div v-if="conversation" class="flex flex-col h-screen">
-      <div v-for="m in conversation.messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
-        <div :class="{ 'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id }" class="w-fit rounded-3xl p-3">
-          {{ m.content }}
+    <!-- Messages -->
+    <template v-if="conversation">
+      <div class="flex flex-col overflow-y-auto" ref="messages">
+        <div class="flex flex-col flex-1">
+          <div v-for="m in conversation.messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
+            <div
+              :class="{ 'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id }"
+              class="w-fit rounded-3xl p-3">
+              {{ m.content }}
+            </div>
+          </div>
         </div>
       </div>
-      <!-- Input -->
-      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full py-4 mt-auto">
-        <input
-          v-model="input"
-          type="text"
-          class="bg-gray-200 block w-full rounded-md py-4 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder="Write a message..."
-          @keypress="sendMessage"
-        />
-      </div>
+    </template>
+    <!-- Input -->
+    <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full py-4 mt-auto">
+      <input v-model="input" type="text"
+        class="bg-gray-200 block w-full rounded-md py-4 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+        placeholder="Écrivez votre message..." @keydown.enter="sendMessage" />
     </div>
   </div>
 </template>

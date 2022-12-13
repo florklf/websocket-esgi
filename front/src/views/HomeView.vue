@@ -91,12 +91,12 @@ onBeforeMount(async () => {
           </p>
         </div>
         <!-- logout button -->
-        <button class="bg-gray-200 hover:bg-gray-300 rounded-full p-2" @click="logout">
+        <button class="relative bg-red-700 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 text-sm text-white font-semibold h-12 px-6 rounded-lg" @click="logout">
           Déconnexion
         </button>
       </div>
       <ul role="list" class="my-3 divide-y divide-gray-200">
-        <li v-for="user in allUsers" :key="user.id" class="flex p-4 hover:bg-gray-200" @click="newConversation(user)">
+        <li v-for="user in allUsers" :key="user.id" class="flex p-4 hover:bg-gray-200 cursor-pointer" @click="newConversation(user)">
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-900">

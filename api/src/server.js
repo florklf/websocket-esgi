@@ -8,13 +8,6 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-// const server = http.createServer(app);
-// const io = new Server(server);
-// const io = require('socket.io')(server, {
-//   cors: {
-//     origin: 'http://localhost:5173',
-//   },
-// });
 const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {

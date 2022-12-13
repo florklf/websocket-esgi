@@ -14,7 +14,7 @@ const participants = computed(() => props.conversation.users.filter((participant
 </script>
 
 <template>
-  <li class="hover:bg-gray-100 relative flex items-center p-4">
+  <li class="hover:bg-gray-100 relative flex items-center p-4 cursor-pointer">
     <div class="relative flex min-w-0 flex-1 items-center">
       <span class="relative inline-block flex-shrink-0">
         <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="" />
