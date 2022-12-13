@@ -1,7 +1,5 @@
 <script setup>
-import { createDOMCompilerError } from '@vue/compiler-dom';
-import { io } from 'socket.io-client';
-import { onBeforeMount, ref, provide, nextTick } from 'vue';
+import { onBeforeMount, ref, provide, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { createToaster } from '@meforma/vue-toaster';
 import Conversation from '../components/Conversation/Conversation.vue';
@@ -24,8 +22,7 @@ const toaster = createToaster({
   duration: 3000,
 });
 
-const socket = io('http://localhost:3000/', { autoConnect: false });
-provide('socket', socket);
+const socket = inject('socket');
 provide('currentUser', currentUser);
 
 socket.on('users', (users) => {
@@ -79,6 +76,9 @@ socket.on('toggle user status', ({ status }) => {
 });
 socket.on('no adviser', () => {
   toaster.show('Il n\'y a pas de conseiller disponible pour le moment', { type: 'error' });
+});
+socket.on('commercial notification', (message ) => {
+  toaster.show(message, { type: 'info' });
 });
 
 const selectedConversation = (data) => {
@@ -198,8 +198,7 @@ onBeforeMount(async () => {
           </p>
         </div>
         <div class="flex items-center">
-          <button
-            class="relative focus:outline-none text-sm text-white font-semibold h-12 px-6 rounded-lg"
+          <button class="relative focus:outline-none text-sm text-white font-semibold h-12 px-6 rounded-lg"
             :class="currentUser.status === 'active' ? 'bg-green-700 hover:bg-green-900' : 'bg-gray-700 hover:bg-gray-900'"
             @click="toggleUserStatus(currentUser)">
             {{ currentUser.status === 'active' ? 'En ligne' : 'Hors ligne' }}

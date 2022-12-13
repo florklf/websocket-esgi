@@ -171,6 +171,10 @@ io.on('connection', (socket) => {
       io.emit('toggle user status', { status: user.status });
     });
   });
+
+  socket.on('commercial notification', (message) => {
+    socket.broadcast.emit('commercial notification', message);
+  });
 });
 
 app.use('/api', routes);
