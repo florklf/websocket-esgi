@@ -85,8 +85,16 @@ socket.on('no adviser', () => {
 socket.on('commercial notification', (message) => {
   toaster.show(message, { type: 'info' });
 });
+socket.on('user joined', async () => {
+  groupConversations.value = await getConversationsBy({ type: 'group' });
+});
 
 const selectedConversation = (data) => {
+  if (data.max_users - data.users.length === 0) {
+    toaster.show('Vous ne pouvez pas rejoindre cette conversation, elle est pleine', { type: 'error' });
+    return;
+  }
+  socket.emit('join conversation', data.id);
   selectedConv.value = data;
   componentKey.value += 1;
 };
@@ -260,12 +268,7 @@ onBeforeMount(async () => {
         <h2 class="text-xl font-medium text-gray-500 mb-4">
           Rejoindre une conversation de groupe
         </h2>
-        <li
-          v-for="group in groupConversations"
-          :key="group.id"
-          class="flex p-4 hover:bg-gray-200 cursor-pointer"
-          @click="selectedConversation(group)"
-        >
+        <li v-for="group in groupConversations" :key="group.id" class="flex p-4 hover:bg-gray-200 cursor-pointer" @click="selectedConversation(group)">
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-900">
@@ -298,29 +301,12 @@ onBeforeMount(async () => {
                 class="p-1 rounded-full bg-slate-200 hover:bg-slate-300 cursor-pointer"
                 @click="acceptRequest(request.id)"
               >
-                <svg
-                  class="h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                >
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               </span>
-              <span
-                class="p-1 rounded-full bg-slate-200 hover:bg-slate-300 cursor-pointer"
-                @click="refuseRequest(request.id)"
-              >
-                <svg
-                  class="h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                >
+              <span class="p-1 rounded-full bg-slate-200 hover:bg-slate-300 cursor-pointer" @click="refuseRequest(request.id)">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </span>

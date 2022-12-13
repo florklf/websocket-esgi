@@ -98,6 +98,7 @@ io.on('connection', (socket) => {
       }
     }).then((message) => {
       io.in(`room_${conversation_id}`).emit("private message", { content: message.messages[0].content, from: socket.id });
+      socket.broadcast.emit('user joined');
       prisma.conversation.findUnique({
         where: { id: parseInt(conversation_id) },
         include: { users: true },
