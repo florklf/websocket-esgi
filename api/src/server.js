@@ -63,14 +63,36 @@ io.on('connection', (socket) => {
   });
 
   socket.on("private message", ({ content, conversation_id }) => {
-    prisma.message.create({
-      data: {
-        user_id: socket.id,
-        conversation_id,
-        content,
+    prisma.conversation.update({
+      where: {
+        id: parseInt(conversation_id)
       },
+      select: {
+        messages: {
+          select: {
+            content: true,
+          },
+          orderBy: {
+            created_at: 'desc',
+          },
+          take: 1,
+        }
+      },
+      data: {
+        users: {
+          connect: {
+            id: socket.id
+          },
+        },
+        messages: {
+          create: {
+            user_id: socket.id,
+            content,
+          },
+        }
+      }
     }).then((message) => {
-      io.in(`room_${conversation_id}`).emit("private message", { content: message.content, from: socket.id });
+      io.in(`room_${conversation_id}`).emit("private message", { content: message.messages[0].content, from: socket.id });
       prisma.conversation.findUnique({
         where: { id: parseInt(conversation_id) },
         include: { users: true },

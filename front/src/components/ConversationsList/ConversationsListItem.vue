@@ -23,7 +23,8 @@ const participants = computed(() => props.conversation.users.filter((participant
       </span>
       <div class="ml-4 truncate">
         <p class="truncate text-sm font-medium text-gray-900">
-          <template v-for="(user, index) in participants" :key="user.id">
+          <span v-if="conversation && conversation.name">{{ conversation.name }}</span>
+          <template v-for="(user, index) in participants" v-else :key="user.id">
             <template v-if="index > 0">
               ,
             </template>

@@ -6,9 +6,17 @@ const jwt = require('jsonwebtoken');
 
 exports.getAll = async (req, res, next) => {
     try {
-        const conversations = await prisma.conversation.findMany();
+        let conversations = null;
+        if (req.query) {
+            conversations = await prisma.conversation.findMany({
+                where: req.query
+            });
+        } else {
+            conversations = await prisma.conversation.findMany();
+        }
         res.status(200).json(conversations);
     } catch (e) {
+        console.log(e);
         res.status(401).json({ message: e.message });
     }
 }
@@ -22,6 +30,8 @@ exports.getConversation = async (req, res, next) => {
                 id: true,
                 created_at: true,
                 updated_at: true,
+                name: true,
+                type: true,
                 messages: {
                     orderBy: {
                         created_at: 'asc',
@@ -59,6 +69,8 @@ exports.getUserConversations = async (req, res, next) => {
             where: { users: { some: { id: id } } },
             select: {
                 id: true,
+                name: true,
+                type: true,
                 created_at: true,
                 updated_at: true,
                 messages: {

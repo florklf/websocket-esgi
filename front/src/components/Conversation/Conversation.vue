@@ -47,8 +47,8 @@ async function sendMessage(e) {
     if (!conversation.value.id) {
       conversation.value = await createConversation(conversation.value.users);
       socket.emit('join conversation', conversation.value.id);
-      emit('new-conversation', conversation.value);
     }
+    emit('new-conversation', conversation.value);
     socket.emit('private message', {
       content,
       conversation_id: conversation.value.id,
@@ -91,6 +91,7 @@ socket.on('private message', ({ content, from }) => {
 onBeforeMount(async () => {
   if (props.conversationId) {
     conversation.value = await getConversation();
+    console.log(conversation.value);
   } else {
     conversation.value = {
       users: [currentUser.value.id, props.newConvUser.id],
@@ -129,7 +130,8 @@ const participants = computed(() => {
         </div>
         <div class="pt-1.5">
           <h1 class="text-2xl font-bold text-gray-900">
-            <template v-for="(user, index) in participants" :key="user.id">
+            <span v-if="conversation && conversation.name">{{ conversation.name }}</span>
+            <template v-for="(user, index) in participants" v-else :key="user.id">
               <template v-if="index > 0">
                 ,
               </template>

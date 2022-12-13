@@ -32,10 +32,10 @@ async function main() {
   await prisma.conversation.createMany({
     data: [
       { name: 'Salon 1', type: 'group' },
-      { name: 'Salon 1', type: 'group' },
-      { name: 'Salon 1', type: 'group' },
-      { name: 'Salon 1', type: 'group' },
-      { name: 'Salon 1', type: 'group' },
+      { name: 'Salon 2', type: 'group' },
+      { name: 'Salon 3', type: 'group' },
+      { name: 'Salon 4', type: 'group' },
+      { name: 'Salon 5', type: 'group' },
     ],
   })
 
