@@ -3,7 +3,7 @@ import {
   ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, nextTick,
 } from 'vue';
 
-const emit = defineEmits(['new-conversation']);
+const emit = defineEmits(['new-conversation', 'updated-conversation']);
 
 const props = defineProps({
   conversationId: {
@@ -21,6 +21,8 @@ const input = ref();
 const socket = inject('socket');
 const currentUser = inject('currentUser');
 const conversation = ref();
+const beingEdited = ref(false);
+const convName = ref(conversation.value?.name);
 
 const createConversation = async (users) => {
   const res = await fetch('http://localhost:3000/api/conversations', {
@@ -39,6 +41,16 @@ const getConversation = async () => {
   const res = await fetch(`http://localhost:3000/api/conversations/${props.conversationId}`, { credentials: 'include' });
   return res.json();
 };
+const updateConversation = async (id, where) => {
+  const requestOptions = {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...where }),
+    credentials: 'include',
+  };
+  const res = await fetch(`http://localhost:3000/api/conversations/${id}`, requestOptions);
+  return res.json();
+};
 
 async function sendMessage(e) {
   if ((e.key === 'Enter' || e.keyCode === 13)) {
@@ -55,6 +67,26 @@ async function sendMessage(e) {
     });
   }
 }
+
+const beginEdit = () => {
+  if (beingEdited.value) return;
+  beingEdited.value = true;
+};
+
+const editName = async (e) => {
+  console.log(e);
+  if (e.type === 'keydown' && (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27)) {
+    beingEdited.value = false;
+    return;
+  }
+  if ((e.type === 'keydown' && (e.key === 'Enter' || e.keyCode === 13)) || e.type === 'click') {
+    const content = conversation.value.name;
+    if (!content) return;
+    conversation.value = await updateConversation(conversation.value.id, { name: content });
+    emit('updated-conversation', conversation.value);
+    beingEdited.value = false;
+  }
+};
 
 const scroll = (el, type, sec) => {
   setTimeout(() => {
@@ -127,7 +159,21 @@ const participants = computed(() => {
         </div>
         <div class="pt-1.5">
           <h1 class="text-2xl font-bold text-gray-900">
-            <span v-if="conversation && conversation.name">{{ conversation.name }}</span>
+            <div v-if="conversation && conversation.name">
+              <div v-if="currentUser.role === 'admin' && beingEdited" class="flex items-center space-x-4">
+                <input v-if="beingEdited" v-model="conversation.name" type="text" class="bg-gray-100 block rounded-md border-gray-500 shadow-sm" @keydown="editName" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="text-green-800 w-6 h-6" @click="editName">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <div v-else-if="currentUser.role === 'admin'" class="flex items-center space-x-4">
+                <span>{{ conversation.name }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" @click="beingEdited = true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+              </div>
+              <span v-else>{{ conversation.name }}</span>
+            </div>
             <template v-for="(user, index) in participants" v-else :key="user.id">
               <template v-if="index > 0">
                 ,

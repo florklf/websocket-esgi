@@ -9,10 +9,19 @@ exports.getAll = async (req, res, next) => {
         let conversations = null;
         if (req.query) {
             conversations = await prisma.conversation.findMany({
-                where: req.query
+                where: req.query,
+                include: {
+                    messages: true,
+                    users: true,
+                },     
             });
         } else {
-            conversations = await prisma.conversation.findMany();
+            conversations = await prisma.conversation.findMany({
+                include: {
+                    messages: true,
+                    users: true,
+                },
+            });
         }
         res.status(200).json(conversations);
     } catch (e) {
@@ -104,6 +113,7 @@ exports.getUserConversations = async (req, res, next) => {
         });
         res.status(200).json(conversations);
     } catch (e) {
+        console.log(e);
         res.status(401).json({ message: e.message });
     }
 }
@@ -122,6 +132,26 @@ exports.createConversation = async (req, res, next) => {
                 messages: true,
             },
         });
+        res.status(200).json(conversation);
+    } catch (e) {
+        console.log(e);
+        res.status(401).json({ message: e.message });
+    }
+}
+
+exports.updateConversation = async (req, res, next) => {
+    // const { id } = req.body;
+    try {
+        const conversation = await prisma.conversation.update(
+            {
+                where: { id: parseInt(req.body.id) },
+                data: req.body,
+                include: {
+                    users: true,
+                    messages: true,
+                },
+            }
+        );
         res.status(200).json(conversation);
     } catch (e) {
         console.log(e);

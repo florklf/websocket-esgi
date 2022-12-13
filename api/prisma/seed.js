@@ -31,18 +31,18 @@ async function main() {
   // Ajoute 5 salons de discussions
   await prisma.conversation.createMany({
     data: [
-      { name: 'Salon 1', type: 'group' },
-      { name: 'Salon 2', type: 'group' },
-      { name: 'Salon 3', type: 'group' },
-      { name: 'Salon 4', type: 'group' },
-      { name: 'Salon 5', type: 'group' },
+      { name: 'Salon 1', type: 'group', max_users: 5 },
+      { name: 'Salon 2', type: 'group', max_users: 6 },
+      { name: 'Salon 3', type: 'group', max_users: 7 },
+      { name: 'Salon 4', type: 'group', max_users: 8 },
+      { name: 'Salon 5', type: 'group', max_users: 10 },
     ],
   })
 
   // Ajoute 3 utilisateurs
   await prisma.user.createMany({
     data: [
-      { username: 'user3', password: bcrypt.hashSync('user3', 8) },
+      { username: 'user3', password: bcrypt.hashSync('user3', 8), role: 'admin' },
       { username: 'user4', password: bcrypt.hashSync('user4', 8) },
       { username: 'user5', password: bcrypt.hashSync('user5', 8), role: 'admin' },
     ],
