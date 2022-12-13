@@ -44,7 +44,7 @@ async function main() {
     data: [
       { username: 'user3', password: bcrypt.hashSync('user3', 8) },
       { username: 'user4', password: bcrypt.hashSync('user4', 8) },
-      { username: 'user5', password: bcrypt.hashSync('user5', 8) },
+      { username: 'user5', password: bcrypt.hashSync('user5', 8), role: 'admin' },
     ],
   });
 }

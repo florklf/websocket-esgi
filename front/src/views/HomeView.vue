@@ -1,7 +1,7 @@
 <script setup>
 import { createDOMCompilerError } from '@vue/compiler-dom';
 import { io } from 'socket.io-client';
-import { onBeforeMount, ref, provide } from 'vue';
+import { onBeforeMount, ref, provide, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { createToaster } from '@meforma/vue-toaster';
 import Conversation from '../components/Conversation/Conversation.vue';
@@ -13,6 +13,7 @@ const currentUser = ref();
 const connectedUsers = ref();
 const allUsers = ref();
 const conversations = ref();
+const requests = ref();
 const selectedConv = ref();
 const newConvUser = ref();
 const componentKey = ref(0);
@@ -39,17 +40,42 @@ socket.on('user connected', (arrivingUser) => {
 socket.on('user disconnected', (leavingUser) => {
   connectedUsers.value = connectedUsers.value.filter((user) => user.userID !== leavingUser.userID);
 });
-socket.on('notification', ({ content, from_username, from_id }) => {
-  toaster.show(`${from_username} vous a envoyé un message: ${content.length > 10 ? `${content.slice(0, 10)}...` : content}`, {
+socket.on('notification', ({ type, content, from, to }) => {
+  if (type === 'private') {
+    toaster.show(`${from.username} vous a envoyé un message: ${content.length > 10 ? content.slice(0, 10) + '...' : content}`, {
+      type: 'info',
+      onClick: () => {
+        newConversation(from);
+      },
+    });
+  }
+  else {
+    toaster.show(`${from.username} a envoyé un message dans le groupe ${to ? `"${to}"` : ''}`, {
+      type: 'info',
+    });
+  }
+});
+socket.on('ask adviser', ({ pendingRequest }) => {
+  toaster.show(`${pendingRequest.user.username} vous a demandé de l'aide`, {
+    type: 'info',
+  });
+  requests.value.push(pendingRequest);
+});
+socket.on('accept request', ({ from_user }) => {
+  toaster.show(`${from_user.username} a accepté votre demande d'aide`, {
     type: 'info',
     onClick: () => {
-      newConversation(from_id);
+      newConversation(from_user);
     },
+  });
+});
+socket.on('reject request', ({ from_username }) => {
+  toaster.show(`${from_username} a refusé votre demande d'aide`, {
+    type: 'info',
   });
 });
 
 const selectedConversation = (data) => {
-  console.log(data);
   selectedConv.value = data;
   componentKey.value += 1;
 };
@@ -84,10 +110,30 @@ const getGroupConversations = async (where) => {
   return res.json();
 };
 
+const getPendingRequests = async () => {
+  const res = await fetch(`http://localhost:3000/api/requests`, { credentials: 'include' });
+  return res.json();
+};
+
+const askAdviser = () => {
+  socket.emit('ask adviser', currentUser.value.id);
+
+};
+
+const acceptRequest = async (request_id) => {
+  socket.emit('accept request', request_id);
+  newConversation(requests.value.find((req) => req.id === request_id).user);
+  requests.value = requests.value.filter((req) => req.id !== request_id);
+};
+const refuseRequest = (request_id) => {
+  socket.emit('reject request', request_id);
+  requests.value = requests.value.filter((req) => req.id !== request_id);
+};
+
 const newConversation = (user) => {
   const found = conversations.value.some((conv) => {
     let result = false;
-    if (conv.users.length === 2) {
+    if (conv.type === 'private') {
       if (conv.users.some((u) => u.id === user.id && conv.users.some((e) => e.id === currentUser.value.id))) {
         selectedConv.value = conv;
         result = true;
@@ -110,6 +156,7 @@ onBeforeMount(async () => {
     currentUser.value = await fetchCurrentUser();
     allUsers.value = await fetchUsers();
     conversations.value = await getConversations();
+    requests.value = await getPendingRequests();
     groupConversations.value = await getGroupConversations({ type: 'group' });
     allUsers.value = allUsers.value.filter((item) => item.id !== currentUser.value.id).sort((a, b) => {
       if (a.username < b.username) return -1;
@@ -125,8 +172,9 @@ onBeforeMount(async () => {
 
 <template>
   <div v-if="currentUser" class="flex h-screen py-6 divide-x">
-    <ConversationsList :conversations="conversations" @select-conversation="selectedConversation" @start-conversation="startConversation" />
-    <div v-if="!selectedConv && !newConvUser" class="flex-1 flex flex-col pl-12 pr-6">
+    <ConversationsList :conversations="conversations" @select-conversation="selectedConversation"
+      @start-conversation="startConversation" />
+    <div v-if="!selectedConv && !newConvUser" class="flex-1 flex flex-col pl-12 pr-6 overflow-y-auto">
       <div class="flex justify-between mb-10">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">
@@ -136,19 +184,25 @@ onBeforeMount(async () => {
             Sélectionnez un utilisateur pour débuter une conversation
           </p>
         </div>
-        <!-- logout button -->
-        <button
-          class="relative bg-red-700 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 text-sm text-white font-semibold h-12 px-6 rounded-lg"
-          @click="logout"
-        >
-          Déconnexion
-        </button>
+        <div class="flex items-center">
+          <button
+            class="m-3 bg-slate-900 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 text-white font-semibold h-12 px-6 rounded-lg w-full flex items-center justify-center sm:w-auto"
+            @click="askAdviser">
+            Parler à un conseiller
+          </button>
+          <button
+            class="relative bg-red-700 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 text-sm text-white font-semibold h-12 px-6 rounded-lg"
+            @click="logout">
+            Déconnexion
+          </button>
+        </div>
       </div>
       <ul role="list" class="my-3 divide-y divide-gray-200">
         <h2 class="text-xl font-medium text-gray-500 mb-4">
           Démarrer une conversation privée
         </h2>
-        <li v-for="user in allUsers" :key="user.id" class="flex p-4 hover:bg-gray-200 cursor-pointer" @click="newConversation(user)">
+        <li v-for="user in allUsers" :key="user.id" class="flex p-4 hover:bg-gray-200 cursor-pointer"
+          @click="newConversation(user)">
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-900">
@@ -164,7 +218,8 @@ onBeforeMount(async () => {
         <h2 class="text-xl font-medium text-gray-500 mb-4">
           Rejoindre une conversation de groupe
         </h2>
-        <li v-for="group in groupConversations" :key="group.id" class="flex p-4 hover:bg-gray-200 cursor-pointer" @click="selectedConversation(group)">
+        <li v-for="group in groupConversations" :key="group.id" class="flex p-4 hover:bg-gray-200 cursor-pointer"
+          @click="selectedConversation(group)">
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-900">
@@ -177,7 +232,45 @@ onBeforeMount(async () => {
         </li>
       </ul>
     </div>
-    <Conversation v-else-if="selectedConv" :key="componentKey" :conversation-id="selectedConv.id" @new-conversation="addConversationToList" />
-    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser" @new-conversation="(conv) => conversations.push(conv)" />
+    <Conversation v-else-if="selectedConv" :key="componentKey" :conversation-id="selectedConv.id"
+      @new-conversation="addConversationToList" />
+    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser"
+      @new-conversation="(conv) => conversations.push(conv)" />
+    <template v-if="requests && currentUser.role === 'admin'">
+      <div class="overflow-y-auto">
+        <h1 class="text-2xl font-bold text-gray-900 m-3">
+          Demande en cours
+        </h1>
+        <ul role="list" class="divide-y divide-gray-200" v-if="requests.length > 0">
+          <li v-for="request in requests" :key="request.id" class="flex p-4 hover:bg-gray-200 justify-between">
+            <div class="flex items-center">
+              <img class="h-10 w-10 rounded-full mr-2" src="https://picsum.photos/200/" alt="" />
+              <p class="text-sm font-medium text-gray-900">
+                {{ request.user.username }}
+              </p>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="p-1 rounded-full bg-slate-200 hover:bg-slate-300 cursor-pointer"
+                @click="acceptRequest(request.id)">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </span>
+              <span class="p-1 rounded-full bg-slate-200 hover:bg-slate-300 cursor-pointer"
+                @click="refuseRequest(request.id)">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
+            </div>
+          </li>
+        </ul>
+        <div v-else class="text-center text-gray-500 m-3">
+          Aucune demande en cours
+        </div>
+      </div>
+    </template>
   </div>
 </template>

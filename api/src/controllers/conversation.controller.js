@@ -63,10 +63,13 @@ exports.getConversation = async (req, res, next) => {
 }
 
 exports.getUserConversations = async (req, res, next) => {
-    const { id } = parseInt(req.params);
+    const { id } = req.params;
+    if (!id) {
+        return res.status(401).json({ message: 'No id provided' });
+    }
     try {
         const conversations = await prisma.conversation.findMany({
-            where: { users: { some: { id: id } } },
+            where: { users: { some: { id: +id, }, }, },
             select: {
                 id: true,
                 name: true,

@@ -77,7 +77,6 @@ onBeforeUnmount(() => {
 });
 
 socket.on('private message', ({ content, from }) => {
-  console.log('received private message', { content, from });
   conversation.value.messages.push({
     content,
     user_id: from,
@@ -91,14 +90,12 @@ socket.on('private message', ({ content, from }) => {
 onBeforeMount(async () => {
   if (props.conversationId) {
     conversation.value = await getConversation();
-    console.log(conversation.value);
   } else {
     conversation.value = {
       users: [currentUser.value.id, props.newConvUser.id],
       messages: [],
     };
   }
-  console.log(conversation);
 });
 
 const participants = computed(() => {

@@ -32,6 +32,7 @@ io.use((socket, next) => {
   const id = socket.handshake.auth.id;
   socket.username = username;
   socket.id = id;
+  socket.role = socket.handshake.auth.role;
   next();
 });
 
@@ -39,6 +40,9 @@ io.on('connection', (socket) => {
   console.log(`user ${socket.id} connected, there is ${io.engine.clientsCount} users connected`);
   const users = [];
   for (let [id, socket] of io.of("/").sockets) {
+    if (socket.role === 'admin') {
+      socket.join('adviser');
+    }
     users.push({
       userID: socket.id,
       username: socket.username,
@@ -97,12 +101,45 @@ io.on('connection', (socket) => {
         where: { id: parseInt(conversation_id) },
         include: { users: true },
       }).then((conversation) => {
-        conversation.users.forEach((user) => {
-          if (user.id !== socket.id) {
-            io.to(user.id).emit('notification', { content, from_username: user.username, from_id: user.id });
-          }
-        });
+        const toUsers = conversation.users.filter((user) => user.id !== socket.id).map((user) => user.id);
+        io.to(toUsers).emit('notification', { type: conversation.type, content, from: socket.handshake.auth, to: conversation.name ?? '' });
       });
+    });
+  });
+
+  socket.on('ask adviser', (user_id) => {
+    prisma.pendingRequest.create({
+      data: {
+        status: 'pending',
+        user_id,
+      },
+      include: { user: true },
+    }).then((pendingRequest) => {
+      io.to('adviser').emit('ask adviser', { pendingRequest });
+    });
+  });
+
+  socket.on('reject request', (request_id) => {
+    prisma.pendingRequest.update({
+      where: { id: parseInt(request_id) },
+      data: {
+        status: 'rejected',
+      },
+      include: { user: true },
+    }).then((pendingRequest) => {
+      io.to(pendingRequest.user.id).emit('reject request', { from_username: socket.username });
+    });
+  });
+
+  socket.on('accept request', (request_id) => {
+    prisma.pendingRequest.update({
+      where: { id: parseInt(request_id) },
+      data: {
+        status: 'accepted',
+      },
+      include: { user: true },
+    }).then((pendingRequest) => {
+      io.to(pendingRequest.user.id).emit('accept request', { from_user: socket.handshake.auth });
     });
   });
 });
