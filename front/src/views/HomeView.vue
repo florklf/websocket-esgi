@@ -81,9 +81,7 @@ const newConversation = (user) => {
   const found = conversations.value.some((conv) => {
     let result = false;
     if (conv.users.length === 2) {
-      console.log('coucou');
       if (conv.users.some((u) => u.id === user.id && conv.users.some((e) => e.id === currentUser.value.id))) {
-        console.log('coucou2');
         selectedConv.value = conv;
         result = true;
       }
@@ -147,6 +145,6 @@ onBeforeMount(async () => {
       </ul>
     </div>
     <Conversation v-else-if="selectedConv" :key="componentKey" :conversation-id="selectedConv.id" />
-    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser" />
+    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser" @new-conversation="(conv) => conversations.push(conv)" />
   </div>
 </template>

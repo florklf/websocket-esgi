@@ -3,6 +3,8 @@ import {
   ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, nextTick,
 } from 'vue';
 
+const emit = defineEmits(['new-conversation']);
+
 const props = defineProps({
   conversationId: {
     type: Number,
@@ -44,8 +46,8 @@ async function sendMessage(e) {
     if (!content) return;
     if (!conversation.value.id) {
       conversation.value = await createConversation(conversation.value.users);
-      console.log('conversation created', conversation.value);
       socket.emit('join conversation', conversation.value.id);
+      emit('new-conversation', conversation.value);
     }
     socket.emit('private message', {
       content,

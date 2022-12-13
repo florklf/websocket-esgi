@@ -4,12 +4,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  const roles = await prisma.role.createMany({
-    data: [
-      { name: 'user'},
-      { name: 'admin'},
-    ],
-  });
+
+  // Ajoute une conversation entre 2 utilisateurs
   const conv = await prisma.conversation.create({
     data: {
       users: {
@@ -31,6 +27,19 @@ async function main() {
       },
     },
   });
+
+  // Ajoute 5 salons de discussions
+  await prisma.conversation.createMany({
+    data: [
+      { name: 'Salon 1', type: 'group' },
+      { name: 'Salon 1', type: 'group' },
+      { name: 'Salon 1', type: 'group' },
+      { name: 'Salon 1', type: 'group' },
+      { name: 'Salon 1', type: 'group' },
+    ],
+  })
+
+  // Ajoute 3 utilisateurs
   await prisma.user.createMany({
     data: [
       { username: 'user3', password: bcrypt.hashSync('user3', 8) },
