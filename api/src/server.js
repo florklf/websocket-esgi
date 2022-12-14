@@ -1,4 +1,5 @@
-const dotenv = require('dotenv').config();
+const dotenv = require('dotenv')
+dotenv.config();
 const express = require('express');
 const cookies = require('cookie-parser');
 const { Server } = require('socket.io');
@@ -12,7 +13,7 @@ const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: `${process.env.BASE_URL}`,
   },
 });
 
@@ -20,7 +21,7 @@ app.use(express.json());
 app.use(cookies());
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Origin', `${process.env.BASE_URL}`);
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -133,7 +134,7 @@ io.on('connection', (socket) => {
           },
           include: { user: true },
         }).then((pendingRequest) => {
-          io.to('adviser').emit('ask adviser', { pendingRequest });
+          io.to(users.map(user => user.id)).emit('ask adviser', { pendingRequest });
         });
       });
     });
