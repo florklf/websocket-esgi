@@ -1,13 +1,14 @@
 <script setup>
-import { createDOMCompilerError } from '@vue/compiler-dom';
-import { io } from 'socket.io-client';
 import {
-  onBeforeMount, ref, provide, computed, inject,
+  onBeforeMount, ref, provide, inject,
 } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { createToaster } from '@meforma/vue-toaster';
 import Conversation from '../components/Conversation/Conversation.vue';
 import ConversationsList from '../components/ConversationsList/ConversationsList.vue';
+import { fetchCurrentUser, fetchUsers } from '../services/users';
+import { getUserConversations, getConversationsBy } from '../services/conversations';
+import { getPendingRequests } from '../services/requests';
 
 const router = useRouter();
 
@@ -63,13 +64,17 @@ socket.on('ask adviser', ({ pendingRequest }) => {
   });
   requests.value.push(pendingRequest);
 });
-socket.on('accept request', ({ from_user }) => {
+socket.on('accept request', ({ from_user, conversation }) => {
+  conversations.value.push(conversation);
   toaster.show(`${from_user.username} a accepté votre demande d'aide`, {
     type: 'info',
     onClick: () => {
       newConversation(from_user);
     },
   });
+});
+socket.on('message received', ({ content, conversation }) => {
+  addConversationToList(conversation);
 });
 socket.on('reject request', ({ from_username }) => {
   toaster.show(`${from_username} a refusé votre demande d'aide`, {
@@ -79,8 +84,14 @@ socket.on('reject request', ({ from_username }) => {
 socket.on('toggle user status', ({ status }) => {
   currentUser.value.status = status;
 });
-socket.on('no adviser', () => {
-  toaster.show('Il n\'y a pas de conseiller disponible pour le moment', { type: 'error' });
+socket.on('request sent', ({ state }) => {
+  if (state === 'no_adviser') {
+    toaster.show('Il n\'y a pas de conseiller disponible pour le moment', { type: 'error' });
+  } else if (state === 'already_sent') {
+    toaster.show('Vous avez déjà demandé de l\'aide', { type: 'info' });
+  } else if (state === 'sent') {
+    toaster.show('Un conseiller est disponible, vous allez être mis en relation', { type: 'info' });
+  }
 });
 socket.on('commercial notification', (message) => {
   toaster.show(message, { type: 'info' });
@@ -90,26 +101,19 @@ socket.on('user joined', async () => {
 });
 
 const selectedConversation = (data) => {
-  if (data.max_users - data.users.length === 0) {
-    toaster.show('Vous ne pouvez pas rejoindre cette conversation, elle est pleine', { type: 'error' });
-    return;
+  if (!data.users.some((user) => user.id === currentUser.value.id)) {
+    if (data.max_users - data.users.length === 0) {
+      toaster.show('Vous ne pouvez pas rejoindre cette conversation, elle est pleine', { type: 'error' });
+      return;
+    }
+    socket.emit('join conversation', data.id);
   }
-  socket.emit('join conversation', data.id);
   selectedConv.value = data;
   componentKey.value += 1;
 };
 const startConversation = () => {
   selectedConv.value = null;
   newConvUser.value = null;
-};
-
-const fetchCurrentUser = async () => {
-  const res = await fetch('http://localhost:3000/api/users/me', { credentials: 'include' });
-  return res.json();
-};
-const fetchUsers = async () => {
-  const res = await fetch('http://localhost:3000/api/users');
-  return res.json();
 };
 
 const logout = async () => {
@@ -119,20 +123,6 @@ const logout = async () => {
     router.push({ name: 'Login' });
   }
 };
-const getConversations = async () => {
-  const res = await fetch(`http://localhost:3000/api/conversations/user/${currentUser.value.id}`, { credentials: 'include' });
-  return res.json();
-};
-const getConversationsBy = async (where) => {
-  const whereClause = new URLSearchParams(where).toString();
-  const res = await fetch(`http://localhost:3000/api/conversations?${whereClause}`, { credentials: 'include' });
-  return res.json();
-};
-
-const getPendingRequests = async () => {
-  const res = await fetch('http://localhost:3000/api/requests', { credentials: 'include' });
-  return res.json();
-};
 
 const askAdviser = () => {
   if (currentUser.value.role === 'admin') {
@@ -140,17 +130,16 @@ const askAdviser = () => {
     return;
   }
   socket.emit('ask adviser', currentUser.value.id);
-  toaster.show('Vous avez demandé à parler avec un conseiller', { type: 'info' });
 };
 
-const acceptRequest = async (request_id) => {
-  socket.emit('accept request', request_id);
-  newConversation(requests.value.find((req) => req.id === request_id).user);
-  requests.value = requests.value.filter((req) => req.id !== request_id);
+const acceptRequest = async (requestId) => {
+  socket.emit('accept request', requestId);
+  newConversation(requests.value.find((req) => req.id === requestId).user);
+  requests.value = requests.value.filter((req) => req.id !== requestId);
 };
-const refuseRequest = (request_id) => {
-  socket.emit('reject request', request_id);
-  requests.value = requests.value.filter((req) => req.id !== request_id);
+const refuseRequest = (requestId) => {
+  socket.emit('reject request', requestId);
+  requests.value = requests.value.filter((req) => req.id !== requestId);
 };
 
 const toggleUserStatus = (user) => {
@@ -189,8 +178,8 @@ const updateConversation = async (conv) => {
 onBeforeMount(async () => {
   try {
     currentUser.value = await fetchCurrentUser();
-    allUsers.value = await fetchUsers();
-    conversations.value = await getConversations();
+    allUsers.value = await fetchUsers({ role: 'user' });
+    conversations.value = await getUserConversations(currentUser.value.id);
     requests.value = await getPendingRequests();
     groupConversations.value = await getConversationsBy({ type: 'group' });
     allUsers.value = allUsers.value.filter((item) => item.id !== currentUser.value.id).sort((a, b) => {

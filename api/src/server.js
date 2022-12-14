@@ -105,6 +105,7 @@ io.on('connection', (socket) => {
         include: { users: true },
       }).then((conversation) => {
         const toUsers = conversation.users.filter((user) => user.id !== socket.id).map((user) => user.id);
+        io.to(toUsers).emit('message received', { content, conversation });
         io.to(toUsers).emit('notification', { type: conversation.type, content, from: socket.handshake.auth, to: conversation.name ?? '' });
       });
     });
@@ -118,13 +119,14 @@ io.on('connection', (socket) => {
       },
     }).then((pendingRequests) => {
       if (pendingRequests.length > 0) {
+        io.to(user_id).emit('request sent', { state: 'already_sent' });
         return;
       }
       prisma.user.findMany({
         where: { status: 'active', role: 'admin', },
       }).then((users) => {
         if (users.length === 0) {
-          io.to(user_id).emit('no adviser');
+          io.to(user_id).emit('request sent', { state: 'no_adviser' });
           return;
         }
         prisma.pendingRequest.create({
@@ -134,6 +136,7 @@ io.on('connection', (socket) => {
           },
           include: { user: true },
         }).then((pendingRequest) => {
+          io.to(user_id).emit('request sent', { state: 'sent' });
           io.to(users.map(user => user.id)).emit('ask adviser', { pendingRequest });
         });
       });
@@ -152,16 +155,41 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('accept request', (request_id) => {
-    prisma.pendingRequest.update({
-      where: { id: parseInt(request_id) },
-      data: {
-        status: 'accepted',
-      },
-      include: { user: true },
-    }).then((pendingRequest) => {
-      io.to(pendingRequest.user.id).emit('accept request', { from_user: socket.handshake.auth });
-    });
+  socket.on('accept request', async (request_id) => {
+    console.log(socket.id, socket.handshake.auth);
+    try {
+      const pendingRequest = await pendingRequest.update({
+        where: { id: parseInt(request_id) },
+        data: {
+          status: 'accepted',
+        },
+        include: { user: true },
+      });
+      const createdConversation = await prisma.conversation.create({
+        data: {
+          type: 'private',
+          users: {
+            connect: [
+              {id: socket.id},
+              {id: pendingRequest.user.id},
+            ],
+          },
+        }
+      });
+      io.to(pendingRequest.user.id).emit('accept request', { from_username: socket.handhsake.auth, conversation: createdConversation });
+    } catch (error) {
+      console.log(error);
+    }
+
+    // prisma.pendingRequest.update({
+    //   where: { id: parseInt(request_id) },
+    //   data: {
+    //     status: 'accepted',
+    //   },
+    //   include: { user: true },
+    // }).then((pendingRequest) => {
+    //   io.to(pendingRequest.user.id).emit('accept request', { from_user: socket.handshake.auth });
+    // });
   });
 
   socket.on('toggle user status', (user) => {

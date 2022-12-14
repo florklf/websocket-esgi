@@ -6,7 +6,14 @@ const jwt = require('jsonwebtoken');
 
 exports.getUsers = async (req, res, next) => {
     try {
-        const users = await prisma.user.findMany();
+        let users = null;
+        if (req.query) {
+            users = await prisma.user.findMany({
+                where: req.query   
+            });
+        } else {
+            users = await prisma.user.findMany();
+        }
         res.status(200).json(users);
     } catch (e) {
         res.status(401).json({ message: e.message });
