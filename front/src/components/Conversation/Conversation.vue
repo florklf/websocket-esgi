@@ -2,6 +2,7 @@
 import {
   ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, nextTick,
 } from 'vue';
+import { createConversation, updateConversation, getConversationById } from '../../services/conversations';
 
 const emit = defineEmits(['new-conversation', 'updated-conversation']);
 
@@ -22,35 +23,6 @@ const socket = inject('socket');
 const currentUser = inject('currentUser');
 const conversation = ref();
 const beingEdited = ref(false);
-const convName = ref(conversation.value?.name);
-
-const createConversation = async (users) => {
-  const res = await fetch('http://localhost:3000/api/conversations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      users,
-    }),
-  });
-  return res.json();
-};
-
-const getConversation = async () => {
-  const res = await fetch(`http://localhost:3000/api/conversations/${props.conversationId}`, { credentials: 'include' });
-  return res.json();
-};
-const updateConversation = async (id, where) => {
-  const requestOptions = {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, ...where }),
-    credentials: 'include',
-  };
-  const res = await fetch(`http://localhost:3000/api/conversations/${id}`, requestOptions);
-  return res.json();
-};
 
 async function sendMessage(e) {
   if ((e.key === 'Enter' || e.keyCode === 13)) {
@@ -68,13 +40,7 @@ async function sendMessage(e) {
   }
 }
 
-const beginEdit = () => {
-  if (beingEdited.value) return;
-  beingEdited.value = true;
-};
-
 const editName = async (e) => {
-  console.log(e);
   if (e.type === 'keydown' && (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27)) {
     beingEdited.value = false;
     return;
@@ -84,6 +50,7 @@ const editName = async (e) => {
     if (!content) return;
     conversation.value = await updateConversation(conversation.value.id, { name: content });
     emit('updated-conversation', conversation.value);
+    socket.emit('updated conversation', conversation.value);
     beingEdited.value = false;
   }
 };
@@ -121,7 +88,7 @@ socket.on('private message', ({ content, from }) => {
 
 onBeforeMount(async () => {
   if (props.conversationId) {
-    conversation.value = await getConversation();
+    conversation.value = await getConversationById(props.conversationId);
   } else {
     conversation.value = {
       users: [currentUser.value.id, props.newConvUser.id],

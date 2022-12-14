@@ -180,16 +180,6 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.log(error);
     }
-
-    // prisma.pendingRequest.update({
-    //   where: { id: parseInt(request_id) },
-    //   data: {
-    //     status: 'accepted',
-    //   },
-    //   include: { user: true },
-    // }).then((pendingRequest) => {
-    //   io.to(pendingRequest.user.id).emit('accept request', { from_user: socket.handshake.auth });
-    // });
   });
 
   socket.on('toggle user status', (user) => {
@@ -205,6 +195,10 @@ io.on('connection', (socket) => {
 
   socket.on('commercial notification', (message) => {
     socket.broadcast.emit('commercial notification', message);
+  });
+
+  socket.on('updated conversation', (conversation) => {
+    socket.broadcast.emit('updated conversation', conversation);
   });
 });
 

@@ -74,7 +74,7 @@ socket.on('accept request', ({ from_user, conversation }) => {
   });
 });
 socket.on('message received', ({ content, conversation }) => {
-  addConversationToList(conversation);
+  upsertConversation(conversation);
 });
 socket.on('reject request', ({ from_username }) => {
   toaster.show(`${from_username} a refusé votre demande d'aide`, {
@@ -99,22 +99,9 @@ socket.on('commercial notification', (message) => {
 socket.on('user joined', async () => {
   groupConversations.value = await getConversationsBy({ type: 'group' });
 });
-
-const selectedConversation = (data) => {
-  if (!data.users.some((user) => user.id === currentUser.value.id)) {
-    if (data.max_users - data.users.length === 0) {
-      toaster.show('Vous ne pouvez pas rejoindre cette conversation, elle est pleine', { type: 'error' });
-      return;
-    }
-    socket.emit('join conversation', data.id);
-  }
-  selectedConv.value = data;
-  componentKey.value += 1;
-};
-const startConversation = () => {
-  selectedConv.value = null;
-  newConvUser.value = null;
-};
+socket.on('updated conversation', (conversation) => {
+  upsertConversation(conversation);
+});
 
 const logout = async () => {
   socket.disconnect();
@@ -146,33 +133,47 @@ const toggleUserStatus = (user) => {
   socket.emit('toggle user status', user);
 };
 
+const selectedConversation = (data) => {
+  if (!data.users.some((user) => user.id === currentUser.value.id)) {
+    if (data.max_users - data.users.length === 0) {
+      toaster.show('Vous ne pouvez pas rejoindre cette conversation, elle est pleine', { type: 'error' });
+      return;
+    }
+    socket.emit('join conversation', data.id);
+  }
+  selectedConv.value = data;
+  componentKey.value += 1;
+};
+
 const newConversation = (user) => {
   const found = conversations.value.some((conv) => {
-    let result = false;
     if (conv.type === 'private') {
       if (conv.users.some((u) => u.id === user.id && conv.users.some((e) => e.id === currentUser.value.id))) {
         selectedConv.value = conv;
-        result = true;
+        return true;
       }
     }
-    return result;
+    return false;
   });
   if (!found) {
     newConvUser.value = user;
   }
 };
 
-const addConversationToList = (conv) => {
-  if (conversations.value.some((c) => c.id === conv.id)) return;
-  conversations.value.push(conv);
-};
-
-const updateConversation = async (conv) => {
+const upsertConversation = async (conv) => {
+  console.log(conv);
   const existingPrivateConversation = conversations.value.findIndex((c) => c.id === conv.id);
+  const existingGroupConversation = groupConversations.value.findIndex((c) => c.id === conv.id);
   if (existingPrivateConversation !== -1) {
     conversations.value.splice(existingPrivateConversation, 1, conv);
+  } else {
+    conversations.value.unshift(conv);
   }
-  groupConversations.value = await getConversationsBy({ type: 'group' });
+  if (existingGroupConversation !== -1) {
+    groupConversations.value.splice(existingGroupConversation, 1, conv);
+  } else {
+    groupConversations.value.unshift(conv);
+  }
 };
 
 onBeforeMount(async () => {
@@ -199,7 +200,7 @@ onBeforeMount(async () => {
     <ConversationsList
       :conversations="conversations"
       @select-conversation="selectedConversation"
-      @start-conversation="startConversation"
+      @start-conversation="selectedConv = newConvUser = null"
     />
     <div v-if="!selectedConv && !newConvUser" class="flex-1 flex flex-col pl-12 pr-6 overflow-y-auto">
       <div class="flex justify-between mb-10">
@@ -271,8 +272,8 @@ onBeforeMount(async () => {
         </li>
       </ul>
     </div>
-    <Conversation v-else-if="selectedConv" :key="componentKey" :conversation-id="selectedConv.id" @new-conversation="addConversationToList" @updated-conversation="updateConversation" />
-    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser" @new-conversation="(conv) => conversations.push(conv)" />
+    <Conversation v-else-if="selectedConv" :key="componentKey" :conversation-id="selectedConv.id" @new-conversation="upsertConversation" @updated-conversation="upsertConversation" />
+    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser" @new-conversation="(conv) => conversations.unshift(conv)" />
     <template v-if="requests && currentUser.role === 'admin'">
       <div class="overflow-y-auto">
         <h1 class="text-2xl font-bold text-gray-900 m-3">
