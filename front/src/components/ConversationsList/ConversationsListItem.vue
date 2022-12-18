@@ -1,5 +1,6 @@
 <script setup>
 import { computed, inject } from 'vue';
+import { currentUser } from '../../store';
 
 const props = defineProps({
   conversation: {
@@ -8,7 +9,6 @@ const props = defineProps({
     default: () => {},
   },
 });
-const currentUser = inject('currentUser');
 const participants = computed(() => props.conversation.users.filter((participant) => participant.id !== currentUser.value.id));
 
 </script>

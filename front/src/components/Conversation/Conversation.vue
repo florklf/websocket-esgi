@@ -1,11 +1,19 @@
 <script setup>
 import {
-  ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, nextTick,
+  ref, inject, onMounted, computed, onBeforeMount, onBeforeUnmount, nextTick, provide,
 } from 'vue';
-import { createConversation, updateConversation, getConversationById } from '../../services/conversations';
+import {
+  Menu, MenuButton, MenuItems, MenuItem,
+} from '@headlessui/vue';
+import {
+  createConversation, editConversation, getConversationById,
+} from '../../services/conversations';
+import ConversationMenu from './ConversationMenu.vue';
+import {
+  addConversation, currentUser, updateConversation, joinedConversations,
+} from '../../store';
 
 const emit = defineEmits(['new-conversation', 'updated-conversation']);
-
 const props = defineProps({
   conversationId: {
     type: Number,
@@ -20,9 +28,9 @@ const messages = ref(null);
 const input = ref();
 
 const socket = inject('socket');
-const currentUser = inject('currentUser');
 const conversation = ref();
 const beingEdited = ref(false);
+provide('conversation', conversation);
 
 async function sendMessage(e) {
   if ((e.key === 'Enter' || e.keyCode === 13)) {
@@ -31,12 +39,21 @@ async function sendMessage(e) {
     if (!conversation.value.id) {
       conversation.value = await createConversation(conversation.value.users);
       socket.emit('join conversation', conversation.value.id);
+      addConversation(conversation.value);
+    } else if (!joinedConversations.value.some((conv) => conv.id === conversation.value.id)) {
+      addConversation(conversation.value);
+    } else {
+      updateConversation(conversation.value);
     }
-    emit('new-conversation', conversation.value);
+    conversation.value.messages.push({
+      content,
+      user_id: currentUser.value.id,
+    });
     socket.emit('private message', {
       content,
       conversation_id: conversation.value.id,
     });
+    input.value = '';
   }
 }
 
@@ -48,8 +65,8 @@ const editName = async (e) => {
   if ((e.type === 'keydown' && (e.key === 'Enter' || e.keyCode === 13)) || e.type === 'click') {
     const content = conversation.value.name;
     if (!content) return;
-    conversation.value = await updateConversation(conversation.value.id, { name: content });
-    emit('updated-conversation', conversation.value);
+    conversation.value = await editConversation(conversation.value.id, { name: content });
+    updateConversation(conversation.value);
     socket.emit('updated conversation', conversation.value);
     beingEdited.value = false;
   }
@@ -75,26 +92,14 @@ onBeforeUnmount(() => {
   socket.emit('leave conversation', conversation.value.id);
 });
 
-socket.on('private message', ({ content, from }) => {
+socket.on('message received', ({ content, from }) => {
   conversation.value.messages.push({
     content,
     user_id: from,
   });
-  input.value = '';
   nextTick(() => {
     scroll(messages, 'smooth');
   });
-});
-
-onBeforeMount(async () => {
-  if (props.conversationId) {
-    conversation.value = await getConversationById(props.conversationId);
-  } else {
-    conversation.value = {
-      users: [currentUser.value.id, props.newConvUser.id],
-      messages: [],
-    };
-  }
 });
 
 const participants = computed(() => {
@@ -106,6 +111,15 @@ const participants = computed(() => {
   }
   return [];
 });
+
+if (props.conversationId) {
+  conversation.value = await getConversationById(props.conversationId);
+} else {
+  conversation.value = {
+    users: [currentUser.value.id, props.newConvUser.id],
+    messages: [],
+  };
+}
 
 </script>
 
@@ -154,16 +168,10 @@ const participants = computed(() => {
           </p>
         </div>
       </div>
-      <!-- <div class="justify-stretch mt-6 flex flex-col-reverse space-y-4 space-y-reverse sm:flex-row-reverse sm:justify-end sm:space-y-0 sm:space-x-3 sm:space-x-reverse md:mt-0 md:flex-row md:space-x-3">
-        <button type="button" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-100">
-          Disqualify
-        </button>
-        <button type="button" class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-100">
-          Advance to offer
-        </button>
-      </div> -->
+      <div class="justify-stretch mt-6 flex flex-col-reverse space-y-4 space-y-reverse sm:flex-row-reverse sm:justify-end sm:space-y-0 sm:space-x-3 sm:space-x-reverse md:mt-0 md:flex-row md:space-x-3">
+        <ConversationMenu v-if="currentUser.role === 'admin' || conversation.type === 'private'" />
+      </div>
     </div>
-
     <!-- Messages -->
     <template v-if="conversation">
       <div ref="messages" class="flex flex-col overflow-y-auto">
@@ -171,7 +179,7 @@ const participants = computed(() => {
           <div v-for="m in conversation.messages" :key="m.id" class="mx-auto max-w-7xl sm:px-6 lg:px-8 w-full">
             <div
               :class="{ 'bg-green-400 ml-auto': m.user_id == currentUser.id, 'bg-gray-200 mr-auto': m.user_id !== currentUser.id }"
-              class="w-fit rounded-3xl p-3"
+              class="w-fit rounded-3xl p-3 z-0 relative"
             >
               {{ m.content }}
             </div>

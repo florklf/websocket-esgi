@@ -9,18 +9,21 @@ import ConversationsList from '../components/ConversationsList/ConversationsList
 import { fetchCurrentUser, fetchUsers } from '../services/users';
 import { getUserConversations, getConversationsBy } from '../services/conversations';
 import { getPendingRequests } from '../services/requests';
+import {
+  currentUser, joinedConversations, groupConversations, addConversation, updateConversation, removeConversation,
+} from '../store';
 
 const router = useRouter();
+currentUser.value = await fetchCurrentUser();
+joinedConversations.value = await getUserConversations(currentUser.value.id);
+groupConversations.value = await getConversationsBy({ type: 'group' });
 
-const currentUser = ref();
 const connectedUsers = ref();
 const allUsers = ref();
-const conversations = ref();
 const requests = ref();
 const selectedConv = ref();
 const newConvUser = ref();
 const componentKey = ref(0);
-const groupConversations = ref();
 
 const toaster = createToaster({
   position: 'bottom-right',
@@ -28,7 +31,6 @@ const toaster = createToaster({
 });
 
 const socket = inject('socket');
-provide('currentUser', currentUser);
 
 socket.on('users', (users) => {
   connectedUsers.value = users.filter((item) => item.userID !== currentUser.value.id).sort((a, b) => {
@@ -49,7 +51,7 @@ socket.on('notification', ({
     toaster.show(`${from.username} vous a envoyé un message: ${content.length > 10 ? `${content.slice(0, 10)}...` : content}`, {
       type: 'info',
       onClick: () => {
-        newConversation(from);
+        joinPrivateConversation(from);
       },
     });
   } else {
@@ -65,16 +67,24 @@ socket.on('ask adviser', ({ pendingRequest }) => {
   requests.value.push(pendingRequest);
 });
 socket.on('accept request', ({ from_user, conversation }) => {
-  conversations.value.push(conversation);
+  if (joinedConversations.value.some((conv) => conv.id === conversation.id)) {
+    updateConversation(conversation);
+  } else {
+    addConversation(conversation);
+  }
   toaster.show(`${from_user.username} a accepté votre demande d'aide`, {
     type: 'info',
     onClick: () => {
-      newConversation(from_user);
+      joinPrivateConversation(from_user);
     },
   });
 });
-socket.on('message received', ({ content, conversation }) => {
-  upsertConversation(conversation);
+socket.on('message received', ({ conversation }) => {
+  if (joinedConversations.value.some((conv) => conv.id === conversation.id)) {
+    updateConversation(conversation);
+  } else {
+    addConversation(conversation);
+  }
 });
 socket.on('reject request', ({ from_username }) => {
   toaster.show(`${from_username} a refusé votre demande d'aide`, {
@@ -83,6 +93,19 @@ socket.on('reject request', ({ from_username }) => {
 });
 socket.on('toggle user status', ({ status }) => {
   currentUser.value.status = status;
+});
+socket.on('request response', ({ state, from_user, conversation }) => {
+  if (state === 'accepted') {
+    joinedConversations.value.push(conversation);
+    toaster.show(`${from_user.username} a accepté votre demande d'aide`, {
+      type: 'info',
+      onClick: () => {
+        joinPrivateConversation(from_user);
+      },
+    });
+  } else if (state === 'rejected') {
+    toaster.show(`${from_user.username} a refusé votre demande d'aide`, { type: 'info' });
+  }
 });
 socket.on('request sent', ({ state }) => {
   if (state === 'no_adviser') {
@@ -93,6 +116,7 @@ socket.on('request sent', ({ state }) => {
     toaster.show('Un conseiller est disponible, vous allez être mis en relation', { type: 'info' });
   }
 });
+// socket.on('notification', ({ message, type, from, conversation}))
 socket.on('commercial notification', (message) => {
   toaster.show(message, { type: 'info' });
 });
@@ -100,7 +124,10 @@ socket.on('user joined', async () => {
   groupConversations.value = await getConversationsBy({ type: 'group' });
 });
 socket.on('updated conversation', (conversation) => {
-  upsertConversation(conversation);
+  updateConversation(conversation);
+});
+socket.on('deleted conversation', (conversation) => {
+  removeConversation(conversation);
 });
 
 const logout = async () => {
@@ -121,7 +148,7 @@ const askAdviser = () => {
 
 const acceptRequest = async (requestId) => {
   socket.emit('accept request', requestId);
-  newConversation(requests.value.find((req) => req.id === requestId).user);
+  joinPrivateConversation(requests.value.find((req) => req.id === requestId).user);
   requests.value = requests.value.filter((req) => req.id !== requestId);
 };
 const refuseRequest = (requestId) => {
@@ -139,14 +166,13 @@ const selectedConversation = (data) => {
       toaster.show('Vous ne pouvez pas rejoindre cette conversation, elle est pleine', { type: 'error' });
       return;
     }
-    socket.emit('join conversation', data.id);
   }
   selectedConv.value = data;
   componentKey.value += 1;
 };
 
-const newConversation = (user) => {
-  const found = conversations.value.some((conv) => {
+const joinPrivateConversation = (user) => {
+  const found = joinedConversations.value.some((conv) => {
     if (conv.type === 'private') {
       if (conv.users.some((u) => u.id === user.id && conv.users.some((e) => e.id === currentUser.value.id))) {
         selectedConv.value = conv;
@@ -160,45 +186,23 @@ const newConversation = (user) => {
   }
 };
 
-const upsertConversation = async (conv) => {
-  console.log(conv);
-  const existingPrivateConversation = conversations.value.findIndex((c) => c.id === conv.id);
-  const existingGroupConversation = groupConversations.value.findIndex((c) => c.id === conv.id);
-  if (existingPrivateConversation !== -1) {
-    conversations.value.splice(existingPrivateConversation, 1, conv);
-  } else {
-    conversations.value.unshift(conv);
-  }
-  if (existingGroupConversation !== -1) {
-    groupConversations.value.splice(existingGroupConversation, 1, conv);
-  } else {
-    groupConversations.value.unshift(conv);
-  }
-};
-
-onBeforeMount(async () => {
-  try {
-    currentUser.value = await fetchCurrentUser();
-    allUsers.value = await fetchUsers({ role: 'user' });
-    conversations.value = await getUserConversations(currentUser.value.id);
-    requests.value = await getPendingRequests();
-    groupConversations.value = await getConversationsBy({ type: 'group' });
-    allUsers.value = allUsers.value.filter((item) => item.id !== currentUser.value.id).sort((a, b) => {
-      if (a.username < b.username) return -1;
-      return a.username > b.username ? 1 : 0;
-    });
-    socket.auth = currentUser.value;
-    socket.connect();
-  } catch (err) {
-    console.log(err);
-  }
-});
+try {
+  requests.value = await getPendingRequests();
+  allUsers.value = await fetchUsers({ role: 'user' });
+  allUsers.value = allUsers.value.filter((item) => item.id !== currentUser.value.id).sort((a, b) => {
+    if (a.username < b.username) return -1;
+    return a.username > b.username ? 1 : 0;
+  });
+  socket.auth = currentUser.value;
+  socket.connect();
+} catch (err) {
+  console.log(err);
+}
 </script>
 
 <template>
   <div v-if="currentUser" class="flex h-screen py-6 divide-x">
     <ConversationsList
-      :conversations="conversations"
       @select-conversation="selectedConversation"
       @start-conversation="selectedConv = newConvUser = null"
     />
@@ -212,7 +216,7 @@ onBeforeMount(async () => {
             Sélectionnez un utilisateur pour débuter une conversation
           </p>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center space-x-3">
           <button
             class="relative focus:outline-none text-sm text-white font-semibold h-12 px-6 rounded-lg"
             :class="currentUser.status === 'active' ? 'bg-green-700 hover:bg-green-900' : 'bg-gray-700 hover:bg-gray-900'"
@@ -221,7 +225,8 @@ onBeforeMount(async () => {
             {{ currentUser.status === 'active' ? 'En ligne' : 'Hors ligne' }}
           </button>
           <button
-            class="m-3 bg-slate-900 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 text-white font-semibold h-12 px-6 rounded-lg w-full flex items-center justify-center sm:w-auto"
+            v-if="currentUser.role !== 'admin'"
+            class="bg-slate-900 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 text-white font-semibold h-12 px-6 rounded-lg w-full flex items-center justify-center sm:w-auto"
             @click="askAdviser"
           >
             Parler à un conseiller
@@ -242,7 +247,7 @@ onBeforeMount(async () => {
           v-for="user in allUsers"
           :key="user.id"
           class="flex p-4 hover:bg-gray-200 cursor-pointer"
-          @click="newConversation(user)"
+          @click="joinPrivateConversation(user)"
         >
           <img class="h-10 w-10 rounded-full" src="https://picsum.photos/200/" alt="" />
           <div class="ml-3">
@@ -272,8 +277,8 @@ onBeforeMount(async () => {
         </li>
       </ul>
     </div>
-    <Conversation v-else-if="selectedConv" :key="componentKey" :conversation-id="selectedConv.id" @new-conversation="upsertConversation" @updated-conversation="upsertConversation" />
-    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser" @new-conversation="(conv) => conversations.unshift(conv)" />
+    <Conversation v-else-if="selectedConv" :key="componentKey" :conversation-id="selectedConv.id" />
+    <Conversation v-else-if="newConvUser" :new-conv-user="newConvUser" />
     <template v-if="requests && currentUser.role === 'admin'">
       <div class="overflow-y-auto">
         <h1 class="text-2xl font-bold text-gray-900 m-3">

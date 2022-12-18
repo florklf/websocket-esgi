@@ -41,6 +41,7 @@ exports.getConversation = async (req, res, next) => {
                 updated_at: true,
                 name: true,
                 type: true,
+                max_users: true,
                 messages: {
                     orderBy: {
                         created_at: 'asc',
@@ -84,6 +85,7 @@ exports.getUserConversations = async (req, res, next) => {
                 id: true,
                 name: true,
                 type: true,
+                max_users: true,
                 created_at: true,
                 updated_at: true,
                 messages: {
@@ -152,6 +154,27 @@ exports.updateConversation = async (req, res, next) => {
                 },
             }
         );
+        res.status(200).json(conversation);
+    } catch (e) {
+        console.log(e);
+        res.status(401).json({ message: e.message });
+    }
+}
+
+exports.deleteConversation = async (req, res, next) => {
+    const { id } = req.params;
+    try {
+        await prisma.conversation.update({
+            where: { id: parseInt(id) },
+            data: {
+              messages: {
+                deleteMany: {},
+              },
+            },
+          });
+        const conversation = await prisma.conversation.delete({
+            where: { id: parseInt(id) },
+        });
         res.status(200).json(conversation);
     } catch (e) {
         console.log(e);

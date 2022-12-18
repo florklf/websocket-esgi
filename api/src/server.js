@@ -30,19 +30,18 @@ app.use((req, res, next) => {
 });
 
 io.use((socket, next) => {
-  const username = socket.handshake.auth.username;
-  const id = socket.handshake.auth.id;
-  socket.username = username;
-  socket.id = id;
+  socket.username = socket.handshake.auth.username;
+  socket.id = socket.handshake.auth.id;
   socket.role = socket.handshake.auth.role;
+  socket.status = socket.handshake.auth.status;
   next();
 });
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log(`user ${socket.id} connected, there is ${io.engine.clientsCount} users connected`);
   const users = [];
   for (let [id, socket] of io.of("/").sockets) {
-    if (socket.role === 'admin') {
+    if (socket.role === 'admin' && socket.status === 'active') {
       socket.join('adviser');
     }
     users.push({
@@ -98,49 +97,46 @@ io.on('connection', (socket) => {
         }
       }
     }).then((message) => {
-      io.in(`room_${conversation_id}`).emit("private message", { content: message.messages[0].content, from: socket.id });
       socket.broadcast.emit('user joined');
       prisma.conversation.findUnique({
         where: { id: parseInt(conversation_id) },
         include: { users: true },
       }).then((conversation) => {
         const toUsers = conversation.users.filter((user) => user.id !== socket.id).map((user) => user.id);
+        if (!toUsers.length) return;
         io.to(toUsers).emit('message received', { content, conversation });
         io.to(toUsers).emit('notification', { type: conversation.type, content, from: socket.handshake.auth, to: conversation.name ?? '' });
       });
     });
   });
 
-  socket.on('ask adviser', (user_id) => {
-    prisma.pendingRequest.findMany({
+  socket.on('ask adviser', async (user_id) => {
+    const pendingRequests = await prisma.pendingRequest.findMany({
       where: {
         user_id,
         status: 'pending',
       },
-    }).then((pendingRequests) => {
-      if (pendingRequests.length > 0) {
-        io.to(user_id).emit('request sent', { state: 'already_sent' });
-        return;
-      }
-      prisma.user.findMany({
-        where: { status: 'active', role: 'admin', },
-      }).then((users) => {
-        if (users.length === 0) {
-          io.to(user_id).emit('request sent', { state: 'no_adviser' });
-          return;
-        }
-        prisma.pendingRequest.create({
-          data: {
-            status: 'pending',
-            user_id,
-          },
-          include: { user: true },
-        }).then((pendingRequest) => {
-          io.to(user_id).emit('request sent', { state: 'sent' });
-          io.to(users.map(user => user.id)).emit('ask adviser', { pendingRequest });
-        });
-      });
     });
+    if (pendingRequests.length > 0) {
+      io.to(user_id).emit('request sent', { state: 'already_sent' });
+      return;
+    }
+    const activeAdvisers = await io.in("adviser").fetchSockets();  
+    if (!activeAdvisers.length) {
+      io.to(user_id).emit('request sent', { state: 'no_adviser' });
+      return;
+    }
+    const pendingRequest = await prisma.pendingRequest.create({
+      data: {
+        user_id,
+        status: 'pending',
+      },
+      include: { user: true },
+    });
+    if (pendingRequest) {
+      io.to(user_id).emit('request sent', { state: 'sent' });
+      io.to(activeAdvisers.map(adviser => adviser.id)).emit('ask adviser', { pendingRequest }); 
+    }
   });
 
   socket.on('reject request', (request_id) => {
@@ -156,27 +152,57 @@ io.on('connection', (socket) => {
   });
 
   socket.on('accept request', async (request_id) => {
-    console.log(socket.id, socket.handshake.auth);
     try {
-      const pendingRequest = await pendingRequest.update({
+      const pendingRequest = await prisma.pendingRequest.update({
         where: { id: parseInt(request_id) },
         data: {
           status: 'accepted',
         },
         include: { user: true },
       });
-      const createdConversation = await prisma.conversation.create({
-        data: {
+      let conv = await prisma.conversation.findFirst({
+        where: {
           type: 'private',
-          users: {
-            connect: [
-              {id: socket.id},
-              {id: pendingRequest.user.id},
-            ],
-          },
-        }
+          AND: [
+            {
+              users: {
+                some: {
+                  id: socket.id
+                },
+              },
+            },
+            {
+              users: {
+                some: {
+                  id: pendingRequest.user.id
+                },
+              },
+            },
+          ]
+        },
+        include: {
+          users: true,
+          messages: true,
+        },
       });
-      io.to(pendingRequest.user.id).emit('accept request', { from_username: socket.handhsake.auth, conversation: createdConversation });
+      if (!conv) {
+        conv = await prisma.conversation.create({
+          data: {
+            type: 'private',
+            users: {
+              connect: [
+                {id: socket.id},
+                {id: pendingRequest.user.id},
+              ],
+            },
+          },
+          include: {
+            users: true,
+            messages: true,
+          },
+        });
+      }
+      io.to(pendingRequest.user.id).emit('accept request', { from_user: socket.handshake.auth, conversation: conv });
     } catch (error) {
       console.log(error);
     }
@@ -190,6 +216,7 @@ io.on('connection', (socket) => {
       },
     }).then((user) => {
       socket.emit('toggle user status', { status: user.status });
+      user.status === 'active' ? socket.join('adviser') : socket.leave('adviser');
     });
   });
 
@@ -199,6 +226,9 @@ io.on('connection', (socket) => {
 
   socket.on('updated conversation', (conversation) => {
     socket.broadcast.emit('updated conversation', conversation);
+  });
+  socket.on('deleted conversation', (conversation) => {
+    socket.broadcast.emit('deleted conversation', conversation);
   });
 });
 
