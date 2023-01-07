@@ -5,6 +5,7 @@ import {
 import { useRouter } from 'vue-router';
 import { createToaster } from '@meforma/vue-toaster';
 import Conversation from '../components/Conversation/Conversation.vue';
+import ConversationChatbotVue from '../components/Conversation/ConversationChatbot.vue';
 import ConversationsList from '../components/ConversationsList/ConversationsList.vue';
 import { fetchCurrentUser, fetchUsers } from '../services/users';
 import { getUserConversations, getConversationsBy } from '../services/conversations';
@@ -24,6 +25,8 @@ const requests = ref();
 const selectedConv = ref();
 const newConvUser = ref();
 const componentKey = ref(0);
+
+const chatbot = ref(false);
 
 const toaster = createToaster({
   position: 'bottom-right',
@@ -160,6 +163,10 @@ const toggleUserStatus = (user) => {
   socket.emit('toggle user status', user);
 };
 
+const toggleChatbot = () => {
+  chatbot.value = !chatbot.value;
+};
+
 const selectedConversation = (data) => {
   if (!data.users.some((user) => user.id === currentUser.value.id)) {
     if (data.max_users - data.users.length === 0) {
@@ -217,6 +224,12 @@ try {
           </p>
         </div>
         <div class="flex items-center space-x-3">
+          <button
+            class="bg-slate-900 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 text-white font-semibold h-12 px-6 rounded-lg w-full flex items-center justify-center sm:w-auto"
+            @click="toggleChatbot"
+          >
+            Chatbot
+          </button>
           <button
             class="relative focus:outline-none text-sm text-white font-semibold h-12 px-6 rounded-lg"
             :class="currentUser.status === 'active' ? 'bg-green-700 hover:bg-green-900' : 'bg-gray-700 hover:bg-gray-900'"
@@ -313,6 +326,9 @@ try {
           Aucune demande en cours
         </div>
       </div>
+    </template>
+    <template v-if="chatbot">
+      <ConversationChatbotVue v-model="chatbot" />
     </template>
   </div>
 </template>

@@ -1,0 +1,120 @@
+{
+    "name": "Checkup workflow",
+    "locale": "fr-FR",
+    "data": [
+        {
+            "intent": "vehicle_maintenance.check",
+            "utterances": [
+                "je veux verifier la maintenance de mon vehicule",
+                "je souhaite verifier l'entretien de mon vehicule"
+            ],
+            "answers": [
+                "Très bien, quelle est l'année de votre véhicule ?"
+            ]
+        },
+        {
+            "intent": "vehicle_maintenance.last_maintenance",
+            "utterances": [
+                "la dernière maintenance a été effectuée le @date",
+                "le @date a été effectuée ma dernière maintenance"
+            ]
+        },
+        {
+            "intent": "vehicle_maintenance.appointment",
+            "utterances": [
+                "le @day à @hour",
+                "à @hour le @day"
+            ]
+        },
+        {
+            "intent": "vehicle_maintenance.km_since_last_maintenance",
+            "utterances": [
+                "{{ km }} kilomètres depuis la dernière maintenance",
+                "{{ km }} km depuis la dernière maintenance",
+                "j'ai parcouru {{ km }} kilomètres depuis la dernière maintenance",
+                "j'ai parcouru {{ km }} km depuis la dernière maintenance",
+                "j'ai parcouru {{ km }} kilomètres depuis la dernière révision",
+                "j'ai parcouru {{ km }} km depuis la dernière révision",
+                "j'ai parcouru {{ km }} kilomètres depuis la dernière réparation",
+                "j'ai parcouru {{ km }} km depuis la dernière réparation"
+            ]
+        },
+        {
+            "intent": "vehicle_maintenance.ask_appointment",
+            "utterances": [
+                "@oui_non",
+                "@oui_non pour le rendez-vous"
+            ]
+        },
+        {
+            "intent": "vehicle_maintenance.contact_info__phone",
+            "utterances": [
+                "puis-je avoir votre numéro de téléphone ?",
+                "quel est votre numéro de téléphone ?",
+                "votre numéro de téléphone ?",
+                "votre numéro ?",
+                "votre téléphone ?"
+            ],
+            "answers": [
+                "Vous pouvez nous joindre au 0102030405."
+            ]
+        },
+        {
+            "intent": "vehicle_maintenance.contact_info__email",
+            "utterances": [
+                "puis-je avoir votre adresse email ?",
+                "quel est votre adresse email ?",
+                "votre adresse email ?",
+                "votre email ?",
+                "votre mail ?"
+            ],
+            "answers": [
+                "Vous pouvez nous écrire à mobot@gmail.com."
+            ]
+        },
+        {
+            "intent": "vehicle_information.check",
+            "utterances": [
+                "je souhaite des informations sur les véhicules",
+                "je souhaite des informations sur les motos",
+                "informations sur les véhicules",
+                "informations sur les motos"
+            ],
+            "answers": [
+                "Quel type de véhicule souhaitez-vous ?"
+            ]
+        },
+        {
+            "intent": "greetings.bye",
+            "utterances": [
+                "merci",
+                "au revoir",
+                "à bientôt",
+                "à la prochaine"
+            ],
+            "answers": [
+                "Au revoir, à bientôt !"
+            ]
+        },
+        {
+            "intent":"greetings.hello",
+            "utterances":[
+                "bonjour",
+                "bjr",
+                "bonsoir",
+                "bsr",
+                "salut",
+                "slt",
+                "coucou",
+                "cc",
+                "bonjour mobot",
+                "bonsoir mobot",
+                "salut mobot",
+                "coucou mobot"
+            ],
+            "answers":[
+                "Bonjour, comment puis-je vous aider ?"
+            ]
+        }
+    ]
+}
