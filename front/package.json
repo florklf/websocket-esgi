@@ -2,16 +2,22 @@
   "name": "websocket-esgi",
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview --port 4173",
     "lint": "npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix",
-    "prepare": "husky install"
+    "prepare": "cd .. && husky install front/.husky",
+    "start": "echo 'Starting server...'"
   },
   "dependencies": {
+    "@headlessui/vue": "^1.7.5",
     "@heroicons/vue": "^2.0.12",
+    "@meforma/vue-toaster": "^1.3.0",
+    "epic-spinners": "^2.0.0",
+    "socket.io-client": "^4.5.3",
     "vue": "^3.2.38",
-    "vue-router": "^4.1.5"
+    "vue-router": "^4.1.5",
+    "vue-spinner": "^1.0.4"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^0.30.1",

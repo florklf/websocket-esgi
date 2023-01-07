@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+    class="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-white"
   >
     <div class="w-full max-w-md space-y-8">
       <div v-if="state.error" class="rounded-md bg-red-50 p-4">
@@ -21,7 +21,7 @@
       <div>
         <img class="mx-auto h-12 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600" alt="Your Company" />
         <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-          Sign in to your account
+          Connexion à votre compte
         </h2>
       </div>
       <form class="mt-8 space-y-6" action="#" method="POST">
@@ -54,22 +54,6 @@
             />
           </div>
         </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <input
-              id="remember-me"
-              name="remember-me"
-              type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <label
-              for="remember-me"
-              class="ml-2 block text-sm text-gray-900"
-            >Remember me</label>
-          </div>
-        </div>
-
         <div>
           <button
             type="submit"
@@ -82,8 +66,8 @@
                 aria-hidden="true"
               />
             </span>
-            <div>sq</div>
-            Sign in
+            <atom-spinner v-if="state.loading" :animation-duration="1000" :size="40" color="white" />
+            <span v-if="!state.loading">Connexion</span>
           </button>
         </div>
       </form>
@@ -93,12 +77,17 @@
 
 <script setup>
 import { LockClosedIcon, XCircleIcon } from '@heroicons/vue/20/solid';
+import { AtomSpinner } from 'epic-spinners';
+
 import { reactive } from 'vue';
 import router from '../router';
 
-const state = reactive({ username: null, password: null, error: null });
+const state = reactive({
+  username: null, password: null, error: null, loading: false,
+});
 
 const login = async () => {
+  state.loading = true;
   const options = {
     method: 'POST',
     headers: {
@@ -116,7 +105,8 @@ const login = async () => {
     if (res.status === 200) router.push('/');
     else state.error = json.message;
   } catch (err) {
-    state.error = 'erreur:'.err;
+    state.error = err;
   }
+  state.loading = false;
 };
 </script>

@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["extendedWhereUnique"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int              @id @default(autoincrement())
+  username       String           @unique @db.VarChar(255)
+  password       String           @db.VarChar(255)
+  status         UserStatus       @default(active)
+  role           Role             @default(user)
+  role_id        Int              @default(1)
+  conversations  Conversation[]
+  Message        Message[]
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?        @db.Timestamp(6)
+  PendingRequest PendingRequest[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id         Int              @id @default(autoincrement())
+  users      User[]
+  messages   Message[]
+  name       String?   @db.VarChar(255)
+  max_users  Int?      @default(2)
+  type       ConversationType @default(private)
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6) @updatedAt
+
+  @@map("conversations")
+}
+
+model Message {
+  id              Int          @id @default(autoincrement())
+  conversation_id Int
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  user_id         Int
+  user            User         @relation(fields: [user_id], references: [id])
+  content         String       @db.VarChar(255)
+  created_at      DateTime     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?    @db.Timestamp(6)
+
+  @@map("messages")
+}
+
+model PendingRequest {
+  id         Int                  @id @default(autoincrement())
+  status     PendingRequestStatus @default(pending)
+  user_id    Int
+  user       User                 @relation(fields: [user_id], references: [id])
+  created_at DateTime             @default(now()) @db.Timestamp(6)
+  updated_at DateTime?            @db.Timestamp(6)
+
+  @@map("pending_requests")
+}
+
+enum PendingRequestStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum ConversationType {
+  private
+  group
+}
