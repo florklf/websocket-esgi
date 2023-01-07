@@ -1,5 +1,4 @@
 const { PrismaClient } = require('@prisma/client');
-const { NotFoundError } = require('@prisma/client/runtime');
 const prisma = new PrismaClient();
 const jwt = require('jsonwebtoken');
 
@@ -13,7 +12,7 @@ exports.getAll = async (req, res, next) => {
                 include: {
                     messages: true,
                     users: true,
-                },     
+                },
             });
         } else {
             conversations = await prisma.conversation.findMany({
@@ -167,11 +166,11 @@ exports.deleteConversation = async (req, res, next) => {
         await prisma.conversation.update({
             where: { id: parseInt(id) },
             data: {
-              messages: {
-                deleteMany: {},
-              },
+                messages: {
+                    deleteMany: {},
+                },
             },
-          });
+        });
         const conversation = await prisma.conversation.delete({
             where: { id: parseInt(id) },
         });
