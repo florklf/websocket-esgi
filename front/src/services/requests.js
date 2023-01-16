@@ -1,4 +1,4 @@
 export const getPendingRequests = async () => {
-  const res = await fetch('http://localhost:3000/api/requests', { credentials: 'include' });
+  const res = await fetch(`${import.meta.env.VITE_BASE_API_URL}/api/requests`, { credentials: 'include' });
   return res.json();
 };

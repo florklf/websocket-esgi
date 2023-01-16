@@ -100,7 +100,7 @@ const login = async () => {
     credentials: 'include',
   };
   try {
-    const res = await fetch('http://localhost:3000/api/login', options);
+    const res = await fetch(`${import.meta.env.VITE_BASE_API_URL}/api/login`, options);
     const json = await res.json();
     if (res.status === 200) router.push('/');
     else state.error = json.message;

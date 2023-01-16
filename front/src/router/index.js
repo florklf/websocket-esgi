@@ -24,7 +24,7 @@ const isAuth = async () => {
     credentials: 'include',
     withCredentials: true,
   };
-  const res = fetch('http://localhost:3000/api/auth', options).then((response) => {
+  const res = fetch(`${import.meta.env.VITE_BASE_API_URL}/api/auth`, options).then((response) => {
     if (response.status === 200) return true;
     return false;
   });

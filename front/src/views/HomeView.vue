@@ -135,7 +135,7 @@ socket.on('deleted conversation', (conversation) => {
 
 const logout = async () => {
   socket.disconnect();
-  const res = await fetch('http://localhost:3000/api/logout', { credentials: 'include' });
+  const res = await fetch(`${import.meta.env.VITE_BASE_API_URL}/api/logout`, { credentials: 'include' });
   if (res.status === 200) {
     router.push({ name: 'Login' });
   }

@@ -59,7 +59,7 @@ const processWorkflow = (input) => {
         message: 'Une seconde...',
         typing: true,
     });
-    fetch('http://localhost:3000/api/chatbot/conversations', {
+    fetch(`${import.meta.env.VITE_BASE_API_URL}/api/chatbot/conversations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
