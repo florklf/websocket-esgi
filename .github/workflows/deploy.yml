@@ -1,0 +1,38 @@
+on:
+  push:
+    branches: [ main ]
+
+name: 🚧 Build & Deployment 🚀
+concurrency: production
+jobs:
+  build:
+    name: 🚧 Build
+    environment: github-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+      - name: 📦 Install dependencies
+        run: npm install
+      - name: 💿 Build
+        run: npm run build
+      - name: 📁 Upload build
+        uses: actions/upload-pages-artifact@v1
+        with:
+          name: github-pages
+          path: dist
+
+  deploy:
+    name: 🚀 Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
