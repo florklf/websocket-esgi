@@ -220,9 +220,10 @@ io.on('connection', async (socket) => {
     });
   });
 
-  socket.on('commercial notification', (message) => {
-    socket.broadcast.emit('commercial notification', message);
-  });
+  // Websockets approch solution 
+  // socket.on('commercial notification', (message) => {
+  //   socket.broadcast.emit('commercial notification', message);
+  // });
 
   socket.on('updated conversation', (conversation) => {
     socket.broadcast.emit('updated conversation', conversation);
