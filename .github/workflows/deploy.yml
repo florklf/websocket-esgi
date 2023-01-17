@@ -5,39 +5,47 @@ on:
 name: 🚧 Build & Deployment 🚀
 concurrency: production
 jobs:
-  build:
-    name: 🚧 Build
+  api:
+    name: 🚧 API Pull & Deployment 🚀
     environment: github-pages
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./front
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v3
-      - name: 📦 Install dependencies
-        run: npm install
-      - name: 💿 Build
-        run: npm run build
-        env:
-          VITE_BASE_API_URL: ${{ secrets.VITE_BASE_API_URL }}
-      - name: 📁 Upload build
-        uses: actions/upload-pages-artifact@v1
+      - name: 💿 API
+        uses: appleboy/ssh-action@master
         with:
-          name: github-pages
-          path: front/dist
-
-  deploy:
-    name: 🚀 Deploy
-    needs: build
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.PROJECT_PATH }}/api
+            git pull
+            set -a
+            source .env
+            set +a
+            ./node_modules/pm2/bin/pm2 stop api
+            ./node_modules/pm2/bin/pm2 delete api
+            npm ci
+            ./node_modules/pm2/bin/pm2 start src/server.js --name api
+  front:
+    name: 🚧 Front Pull & Deployment 🚀
+    environment: github-pages
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      pages: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: 🚀 Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v1
+      - name: 💿 Front
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ~/websocket-esgi/front
+            git pull
+            set -a
+            source .env
+            set +a
+            rm -rf dist
+            npm ci
+            npm run build
+            rm -rf ${{ secrets.NGINX_PATH }}/esgi.rklf.fr/* && cp -r dist/* ${{ secrets.NGINX_PATH }}/esgi.rklf.fr
