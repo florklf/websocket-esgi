@@ -1,7 +1,5 @@
 <script setup>
-import {
-  onBeforeMount, ref, provide, inject,
-} from 'vue';
+import { onMounted, ref, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { createToaster } from '@meforma/vue-toaster';
 import Conversation from '../components/Conversation/Conversation.vue';
@@ -13,6 +11,7 @@ import { getPendingRequests } from '../services/requests';
 import {
   currentUser, joinedConversations, groupConversations, addConversation, updateConversation, removeConversation,
 } from '../store';
+import { useServerSentEvent } from '../hooks/useServerSentEvent';
 
 const router = useRouter();
 currentUser.value = await fetchCurrentUser();
@@ -34,6 +33,14 @@ const toaster = createToaster({
 });
 
 const socket = inject('socket');
+
+const on = useServerSentEvent(`${import.meta.env.VITE_BASE_API_URL}/api/notification`, currentUser.value.id);
+
+onMounted(() => {
+  on("notification", event => {
+    toaster.show(event.data, { type: 'info' });
+  });
+});
 
 socket.on('users', (users) => {
   connectedUsers.value = users.filter((item) => item.userID !== currentUser.value.id).sort((a, b) => {
@@ -119,10 +126,12 @@ socket.on('request sent', ({ state }) => {
     toaster.show('Un conseiller est disponible, vous allez être mis en relation', { type: 'info' });
   }
 });
-// socket.on('notification', ({ message, type, from, conversation}))
-socket.on('commercial notification', (message) => {
-  toaster.show(message, { type: 'info' });
-});
+
+// Websockets approch solution 
+// socket.on('commercial notification', (message) => {
+//   toaster.show(message, { type: 'info' });
+// });
+
 socket.on('user joined', async () => {
   groupConversations.value = await getConversationsBy({ type: 'group' });
 });
