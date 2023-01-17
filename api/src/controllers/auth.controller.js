@@ -11,7 +11,7 @@ exports.login = async (req, res) => {
         const result = await bcrypt.compare(password, user.password);
         if (!result) throw new Error('Incorrect password');
         const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.cookie('token', token, { httpOnly: process.env.NODE_ENV === 'production', secure: process.env.NODE_ENV === 'production', sameSite: 'none', maxAge: 3600000, path: '/' });
+        res.cookie('token', token, { httpOnly: process.env.NODE_ENV === 'production', secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 3600000, path: '/' });
         res.status(200).json({ message: 'Authentication successful'});
     } catch (e) {
         if (e instanceof NotFoundError) {

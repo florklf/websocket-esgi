@@ -3,22 +3,15 @@ dotenv.config();
 const express = require('express');
 const cookies = require('cookie-parser');
 const { Server } = require('socket.io');
-const https = require('https');
-const fs = require('fs');
+const http = require('http');
 const routes = require('./routes');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-// Certificate
-var options = {
-  key: fs.readFileSync(`${process.env.CERTBOT_PATH}/privkey.pem`),
-  cert: fs.readFileSync(`${process.env.CERTBOT_PATH}/fullchain.pem`)
-};
-
 const app = express();
-const httpsServer = https.createServer(options, app);
-const io = new Server(httpsServer, {
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
   cors: {
     origin: process.env.NODE_ENV === 'production' ? `${process.env.BASE_URL}` : 'http://localhost:5173',
   },
@@ -241,8 +234,8 @@ io.on('connection', async (socket) => {
 
 app.use('/api', routes);
 
-httpsServer.listen(443, () => {
-  console.log('Server started on port 443');
+httpServer.listen(8000, () => {
+  console.log('Server started on port 8000');
 });
 
 module.exports = { app, io };
