@@ -15,6 +15,7 @@ exports.getNotification = (req, res) => {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // nginx: disable buffering
     });
 
     const client = +req.query.userId;
