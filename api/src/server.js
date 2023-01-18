@@ -13,7 +13,7 @@ const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' ? `${process.env.BASE_URL}` : 'http://localhost:5173',
+    origin: process.env.BASE_URL,
   },
 });
 
@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(cookies());
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' ? `${process.env.BASE_URL}` : 'http://localhost:5173')
+  res.header('Access-Control-Allow-Origin', process.env.BASE_URL)
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

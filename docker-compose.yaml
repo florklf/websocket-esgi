@@ -28,7 +28,7 @@ services:
         env_file:
             - .env
         ports:
-            - 3000:3000
+            - 8000:8000
         command: >
             sh -c "npx prisma generate
             && npx prisma db push --force-reset
@@ -39,7 +39,11 @@ services:
         volumes:
             - .:/app
     vue:
-        build: ./front
+        build: 
+            context: ./front
+            dockerfile: Dockerfile
+            args: 
+                VITE_BASE_API_URL: ${VITE_BASE_API_URL}
         restart: always
         ports:
             - 8080:80

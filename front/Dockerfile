@@ -1,4 +1,5 @@
 FROM node:latest as build-stage
+ARG VITE_BASE_API_URL
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
