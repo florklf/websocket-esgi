@@ -1,35 +1,40 @@
-# websocket-esgi
 
-This template should help get you started developing with Vue 3 in Vite.
+# Chat websocket
 
-## Recommended IDE Setup
+Chat application in Vue.js using the WebSocket protocol.
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+![App Screenshot](https://i.ibb.co/SQNkbrw/Capture-d-cran-du-2023-01-18-06-53-06.png)
 
-## Customize configuration
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
 
-## Project Setup
+## Run Locally
 
-```sh
-npm install
+Clone the project
+
+```bash
+  git clone https://github.com/florklf/websocket-esgi
 ```
 
-### Compile and Hot-Reload for Development
+Go to the project directory
 
-```sh
-npm run dev
+```bash
+  cd websocket-esgi
 ```
 
-### Compile and Minify for Production
+Fill the .env file then start docker services
 
-```sh
-npm run build
+```bash
+  docker compose up
 ```
 
-### Lint with [ESLint](https://eslint.org/)
 
-```sh
-npm run lint
-```
+## Tech Stack
+
+**Client:** Vue.js, Tailwind CSS
+
+**Server:** Express, Socket.IO, Prisma
+
+
+## Demo
+
+https://esgi.rklf.fr/
