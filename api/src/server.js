@@ -32,7 +32,7 @@ app.use((req, res, next) => {
 io.use((socket, next) => {
   socket.username = socket.handshake.auth.username;
   socket.id = socket.handshake.auth.id;
-  socket.role = socket.handshake.auth.role;
+  socket.role_id = socket.handshake.auth.role_id;
   socket.status = socket.handshake.auth.status;
   next();
 });
@@ -41,7 +41,7 @@ io.on('connection', async (socket) => {
   console.log(`user ${socket.id} connected, there is ${io.engine.clientsCount} users connected`);
   const users = [];
   for (let [id, socket] of io.of("/").sockets) {
-    if (socket.role === 'admin' && socket.status === 'active') {
+    if (socket.role_id === 2 && socket.status === 'active') {
       socket.join('adviser');
     }
     users.push({

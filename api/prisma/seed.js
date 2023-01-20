@@ -42,9 +42,9 @@ async function main() {
   // Ajoute 3 utilisateurs
   await prisma.user.createMany({
     data: [
-      { username: 'user3', password: bcrypt.hashSync('user3', 8), role: 'admin' },
+      { username: 'user3', password: bcrypt.hashSync('user3', 8), role: 'admin', role_id: 2 },
       { username: 'user4', password: bcrypt.hashSync('user4', 8) },
-      { username: 'user5', password: bcrypt.hashSync('user5', 8), role: 'admin' },
+      { username: 'user5', password: bcrypt.hashSync('user5', 8), role: 'admin', role_id: 2 },
     ],
   });
 }
