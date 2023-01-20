@@ -30,7 +30,7 @@ const sendNotification = () => {
 
 <template>
   <ul role="list" class="divide-y divide-gray-200 overflow-y-auto">
-    <button v-if="currentUser.role === 'admin'"
+    <button v-if="currentUser.role_id === 2"
       class="m-3 bg-slate-900 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 text-white font-semibold h-12 px-6 rounded-lg w-full flex items-center justify-center sm:w-auto"
       @click="sendNotification">
       Envoyer une notification

@@ -141,13 +141,13 @@ if (props.conversationId) {
         <div class="pt-1.5">
           <h1 class="text-2xl font-bold text-gray-900">
             <div v-if="conversation && conversation.name">
-              <div v-if="currentUser.role === 'admin' && beingEdited" class="flex items-center space-x-4">
+              <div v-if="currentUser.role_id === 2 && beingEdited" class="flex items-center space-x-4">
                 <input v-if="beingEdited" v-model="conversation.name" type="text" class="bg-gray-100 block rounded-md border-gray-500 shadow-sm" @keydown="editName" />
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="text-green-800 w-6 h-6" @click="editName">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               </div>
-              <div v-else-if="currentUser.role === 'admin'" class="flex items-center space-x-4">
+              <div v-else-if="currentUser.role_id === 2" class="flex items-center space-x-4">
                 <span>{{ conversation.name }}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" @click="beingEdited = true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
@@ -169,7 +169,7 @@ if (props.conversationId) {
         </div>
       </div>
       <div class="justify-stretch mt-6 flex flex-col-reverse space-y-4 space-y-reverse sm:flex-row-reverse sm:justify-end sm:space-y-0 sm:space-x-3 sm:space-x-reverse md:mt-0 md:flex-row md:space-x-3">
-        <ConversationMenu v-if="currentUser.role === 'admin' || conversation.type === 'private'" />
+        <ConversationMenu v-if="currentUser.role_id === 2 || conversation.type === 'private'" />
       </div>
     </div>
     <!-- Messages -->

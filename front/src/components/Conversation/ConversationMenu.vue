@@ -26,7 +26,7 @@ const openDeleteModal = () => {
 </script>
 
 <template>
-  <EditModal v-if="currentUser.role === 'admin'" :key="editModalKey" :is-open="openedEditModal" />
+  <EditModal v-if="currentUser.role_id === 2" :key="editModalKey" :is-open="openedEditModal" />
   <DeleteModal :key="deleteModalKey" :is-open="openedDeleteModal" />
   <Menu as="div" class="relative inline-block text-left">
     <div>
@@ -52,7 +52,7 @@ const openDeleteModal = () => {
       <MenuItems
         class="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
       >
-        <div v-if="currentUser.role === 'admin'" class="px-1 py-1">
+        <div v-if="currentUser.role_id === 2" class="px-1 py-1">
           <MenuItem v-slot="{ active }" @click="openEditModal()">
             <button
               :class="[
